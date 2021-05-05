@@ -1,0 +1,7 @@
+<library path="lib/liblattice_path_planner">
+  <class name="lattice_path_planner/LatticePathPlannerROS" type="lattice_path_planner::LatticePathPlannerROS" base_class_type="nav_core::BaseGlobalPlanner">
+    <description>
+      An implementation of search-based path planning with motion primitives.
+    </description>
+  </class>
+</library>
