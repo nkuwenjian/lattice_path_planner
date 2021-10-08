@@ -2,6 +2,7 @@
 #include <nav_msgs/Path.h>
 
 #include <costmap_2d/inflation_layer.h>
+#include <tf/tf.h>
 #include <tf2/LinearMath/Quaternion.h>
 
 #include <string.h>
@@ -56,6 +57,7 @@ void LatticePathPlannerROS::initialize(std::string name, costmap_2d::Costmap2DRO
     double nominalvel_mpersecs, timetoturn45degsinplace_secs;
     private_nh.param("nominalvel_mpersecs", nominalvel_mpersecs, 0.4);
     private_nh.param("timetoturn45degsinplace_secs", timetoturn45degsinplace_secs, 0.6);
+    private_nh.param("sample_stepsize", sample_stepsize_, costmap_ros->getCostmap()->getResolution());
 
     name_ = name;
     costmap_ros_ = costmap_ros;
@@ -199,10 +201,8 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
     initialize(name_, costmap_ros_);
   }
 
-  plan.clear();
-
-  ROS_INFO("[lattice_path_planner] getting start point (%g,%g) goal point (%g,%g)", start.pose.position.x,
-           start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
+  ROS_DEBUG("[lattice_path_planner] getting start point (%g,%g) goal point (%g,%g)", start.pose.position.x,
+            start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
   double theta_start = 2 * atan2(start.pose.orientation.z, start.pose.orientation.w);
   double theta_goal = 2 * atan2(goal.pose.orientation.z, goal.pose.orientation.w);
 
@@ -241,17 +241,17 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   // update mapdata
   env_->SetMap(costmap_ros_->getCostmap()->getCharMap());
 
-  ROS_INFO("[lattice_path_planner] run planner");
+  ROS_DEBUG("[lattice_path_planner] run planner");
   std::vector<int> solution_stateIDs;
   int solution_cost;
   try
   {
     int ret = planner_->replan(&solution_stateIDs, &solution_cost);
     if (ret)
-      ROS_INFO("Solution is found");
+      ROS_DEBUG("Solution is found");
     else
     {
-      ROS_INFO("Solution not found");
+      ROS_WARN("Solution not found");
       return false;
     }
   }
@@ -281,30 +281,59 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
     sbpl_path.push_back(s);
   }
 
-  ROS_DEBUG("Plan has %d points.", (int)sbpl_path.size());
+  // sample raw path along sbpl path
+  std::vector<sbpl_xy_theta_pt_t> raw_path;
+  raw_path.push_back(sbpl_path.front());
+  sbpl_xy_theta_pt_t last_pose = sbpl_path.front();
+
+  for (unsigned int i = 1; i < sbpl_path.size(); i++)
+  {
+    double dx = sbpl_path[i].x - last_pose.x;
+    double dy = sbpl_path[i].y - last_pose.y;
+    if (hypot(dx, dy) > sample_stepsize_)
+    {
+      raw_path.push_back(sbpl_path[i]);
+      last_pose = sbpl_path[i];
+    }
+  }
+  raw_path.pop_back();
+  raw_path.push_back(sbpl_path.back());
+
+  // smooth the raw path
+  std::vector<sbpl_2Dpt_t> smooth_path;
+  interpolator_.interpolate(raw_path, smooth_path);
+
+  ROS_DEBUG("Plan has %d points.", (int)smooth_path.size());
   ros::Time plan_time = ros::Time::now();
 
   // create a message for the plan
+  plan.clear();
   nav_msgs::Path gui_path;
-  gui_path.poses.resize(sbpl_path.size());
+  gui_path.poses.resize(smooth_path.size());
   gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
   gui_path.header.stamp = plan_time;
-  for (unsigned int i = 0; i < sbpl_path.size(); i++)
+
+  for (unsigned int i = 0; i < smooth_path.size(); i++)
   {
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = plan_time;
     pose.header.frame_id = costmap_ros_->getGlobalFrameID();
 
-    pose.pose.position.x = sbpl_path[i].x + costmap_ros_->getCostmap()->getOriginX();
-    pose.pose.position.y = sbpl_path[i].y + costmap_ros_->getCostmap()->getOriginY();
-    pose.pose.position.z = start.pose.position.z;
+    if (i == 0)
+      pose.pose = start.pose;
+    else if (i == smooth_path.size() - 1)
+      pose.pose = goal.pose;
+    else
+    {
+      pose.pose.position.x = smooth_path[i].x + costmap_ros_->getCostmap()->getOriginX();
+      pose.pose.position.y = smooth_path[i].y + costmap_ros_->getCostmap()->getOriginY();
 
-    tf2::Quaternion temp;
-    temp.setRPY(0, 0, sbpl_path[i].theta);
-    pose.pose.orientation.x = temp.getX();
-    pose.pose.orientation.y = temp.getY();
-    pose.pose.orientation.z = temp.getZ();
-    pose.pose.orientation.w = temp.getW();
+      // get yaw from the orientation of the distance vector between pose_{i+1} and pose_{i}
+      double dx = smooth_path[i + 1].x - smooth_path[i].x;
+      double dy = smooth_path[i + 1].y - smooth_path[i].y;
+      double yaw = std::atan2(dy, dx);
+      pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+    }
 
     plan.push_back(pose);
 

@@ -14,6 +14,7 @@
 #include "lattice_path_planner/sbpl_exception.h"
 #include "lattice_path_planner/lattice_environment.h"
 #include "lattice_path_planner/lattice_path_planner.h"
+#include "lattice_path_planner/spline_interpolation.h"
 
 namespace lattice_path_planner
 {
@@ -59,6 +60,8 @@ private:
 
   LatticePathPlanner* planner_;
   LatticeEnvironment* env_;
+  SplineInterpolation interpolator_;
+  double sample_stepsize_;
 
   std::string primitive_filename_;  //!< where to find the motion primitives for the current robot
   int force_scratch_limit_;  //!< the number of cells that have to be changed in the costmap to force the planner to

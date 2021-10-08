@@ -251,7 +251,7 @@ bool LatticePathPlanner::Search(std::vector<int>& pathIds, int& PathCost)
     bFound = false;
   }
   else {
-    ROS_INFO("Solution is found");
+    ROS_DEBUG("Solution is found");
     pathIds = GetSearchPath(solcost);
     bFound = true;
   }
@@ -259,7 +259,7 @@ bool LatticePathPlanner::Search(std::vector<int>& pathIds, int& PathCost)
   const auto end_t = std::chrono::high_resolution_clock::now();
   const std::chrono::duration<double> timediff = end_t - start_t;
 
-  ROS_INFO("total expands this call=%d, planning time=%.3f secs, solution cost=%d", searchexpands, timediff.count(), solcost);
+  ROS_DEBUG("total expands this call=%d, planning time=%.3f secs, solution cost=%d", searchexpands, timediff.count(), solcost);
 
   return bFound;
 }

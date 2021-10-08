@@ -42,6 +42,7 @@ add_library(${PROJECT_NAME}
   src/lattice_environment.cpp
   src/lattice_path_planner.cpp
   src/lattice_path_planner_ros.cpp
+  src/spline_interpolation.cpp
   src/utils.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
