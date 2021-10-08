@@ -53,6 +53,7 @@ public:
   virtual ~LatticePathPlannerROS();
 
 private:
+  void publishGlobalPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
   unsigned char computeCircumscribedCost();
 
 private:

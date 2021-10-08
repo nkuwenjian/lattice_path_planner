@@ -306,19 +306,13 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   ROS_DEBUG("Plan has %d points.", (int)smooth_path.size());
   ros::Time plan_time = ros::Time::now();
 
-  // create a message for the plan
+  // return path planning result
   plan.clear();
-  nav_msgs::Path gui_path;
-  gui_path.poses.resize(smooth_path.size());
-  gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
-  gui_path.header.stamp = plan_time;
-
+  geometry_msgs::PoseStamped pose;
+  pose.header.frame_id = costmap_ros_->getGlobalFrameID();
+  pose.header.stamp = ros::Time::now();
   for (unsigned int i = 0; i < smooth_path.size(); i++)
   {
-    geometry_msgs::PoseStamped pose;
-    pose.header.stamp = plan_time;
-    pose.header.frame_id = costmap_ros_->getGlobalFrameID();
-
     if (i == 0)
       pose.pose = start.pose;
     else if (i == smooth_path.size() - 1)
@@ -336,12 +330,21 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
     }
 
     plan.push_back(pose);
-
-    gui_path.poses[i] = plan[i];
   }
-  plan_pub_.publish(gui_path);
+
+  publishGlobalPlan(plan);
 
   return true;
+}
+
+void LatticePathPlannerROS::publishGlobalPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
+{
+  nav_msgs::Path gui_path;
+  gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
+  gui_path.header.stamp = ros::Time::now();
+
+  gui_path.poses = plan;
+  plan_pub_.publish(gui_path);
 }
 
 }  // namespace lattice_path_planner
