@@ -301,7 +301,15 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
 
   // smooth the raw path
   std::vector<sbpl_2Dpt_t> smooth_path;
-  interpolator_.interpolate(raw_path, smooth_path);
+  if (raw_path.size() > 2)
+  {
+    interpolator_.interpolate(raw_path, smooth_path);
+  }
+  else
+  {
+    for (int i = 0; i < (int)raw_path.size(); i++)
+      smooth_path.push_back(sbpl_2Dpt_t(raw_path[i].x, raw_path[i].y));
+  }
 
   ROS_DEBUG("Plan has %d points.", (int)smooth_path.size());
   ros::Time plan_time = ros::Time::now();
