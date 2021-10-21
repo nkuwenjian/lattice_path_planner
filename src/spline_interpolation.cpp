@@ -11,7 +11,7 @@ SplineInterpolation::~SplineInterpolation()
 {
 }
 
-void SplineInterpolation::interpolate(const std::vector<sbpl_xy_theta_pt_t>& path, std::vector<sbpl_2Dpt_t>& spline)
+void SplineInterpolation::interpolate(const std::vector<sbpl_2Dpt_t>& path, std::vector<sbpl_2Dpt_t>& spline)
 {
   const auto start_t = std::chrono::high_resolution_clock::now();
 

@@ -13,7 +13,7 @@ public:
   SplineInterpolation();
   virtual ~SplineInterpolation();
 
-  void interpolate(const std::vector<sbpl_xy_theta_pt_t>& path, std::vector<sbpl_2Dpt_t>& spline);
+  void interpolate(const std::vector<sbpl_2Dpt_t>& path, std::vector<sbpl_2Dpt_t>& spline);
 
 private:
   void createTimeGrid(std::vector<double>& T, double& tmin, double& tmax, std::vector<double>& X,

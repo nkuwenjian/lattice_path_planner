@@ -282,8 +282,8 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   }
 
   // sample raw path along sbpl path
-  std::vector<sbpl_xy_theta_pt_t> raw_path;
-  raw_path.push_back(sbpl_path.front());
+  std::vector<sbpl_2Dpt_t> raw_path;
+  raw_path.push_back(sbpl_2Dpt_t(sbpl_path.front().x, sbpl_path.front().y));
   sbpl_xy_theta_pt_t last_pose = sbpl_path.front();
 
   for (unsigned int i = 1; i < sbpl_path.size(); i++)
@@ -292,12 +292,12 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
     double dy = sbpl_path[i].y - last_pose.y;
     if (hypot(dx, dy) > sample_stepsize_)
     {
-      raw_path.push_back(sbpl_path[i]);
+      raw_path.push_back(sbpl_2Dpt_t(sbpl_path[i].x, sbpl_path[i].y));
       last_pose = sbpl_path[i];
     }
   }
   raw_path.pop_back();
-  raw_path.push_back(sbpl_path.back());
+  raw_path.push_back(sbpl_2Dpt_t(sbpl_path.back().x, sbpl_path.back().y));
 
   // smooth the raw path
   std::vector<sbpl_2Dpt_t> smooth_path;
