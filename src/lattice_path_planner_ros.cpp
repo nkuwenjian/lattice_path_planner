@@ -13,12 +13,13 @@ PLUGINLIB_EXPORT_CLASS(lattice_path_planner::LatticePathPlannerROS, nav_core::Ba
 
 namespace lattice_path_planner
 {
-LatticePathPlannerROS::LatticePathPlannerROS() : initialized_(false), costmap_ros_(NULL), planner_(NULL), env_(NULL)
+LatticePathPlannerROS::LatticePathPlannerROS()
+  : initialized_(false), costmap_ros_(NULL), planner_(NULL), env_(NULL), map_data_(NULL)
 {
 }
 
 LatticePathPlannerROS::LatticePathPlannerROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
-  : initialized_(false), costmap_ros_(NULL), planner_(NULL), env_(NULL)
+  : initialized_(false), costmap_ros_(NULL), planner_(NULL), env_(NULL), map_data_(NULL)
 {
   initialize(name, costmap_ros);
 }
@@ -35,6 +36,12 @@ LatticePathPlannerROS::~LatticePathPlannerROS()
   {
     delete env_;
     env_ = NULL;
+  }
+
+  if (map_data_)
+  {
+    delete[] map_data_;
+    map_data_ = NULL;
   }
 }
 
@@ -58,6 +65,7 @@ void LatticePathPlannerROS::initialize(std::string name, costmap_2d::Costmap2DRO
     private_nh.param("nominalvel_mpersecs", nominalvel_mpersecs, 0.4);
     private_nh.param("timetoturn45degsinplace_secs", timetoturn45degsinplace_secs, 0.6);
     private_nh.param("sample_stepsize", sample_stepsize_, costmap_ros->getCostmap()->getResolution());
+    private_nh.param("allow_unknown", allow_unknown_, true);
 
     name_ = name;
     costmap_ros_ = costmap_ros;
@@ -112,6 +120,13 @@ void LatticePathPlannerROS::initialize(std::string name, costmap_2d::Costmap2DRO
                                 timetoturn45degsinplace_secs, costmap_2d::LETHAL_OBSTACLE, primitive_filename_.c_str());
       current_env_width_ = costmap_ros_->getCostmap()->getSizeInCellsX();
       current_env_height_ = costmap_ros_->getCostmap()->getSizeInCellsY();
+
+      if (map_data_)
+      {
+        delete[] map_data_;
+        map_data_ = NULL;
+      }
+      map_data_ = new unsigned char[current_env_width_ * current_env_height_];
     }
     catch (SBPL_Exception* e)
     {
@@ -123,9 +138,6 @@ void LatticePathPlannerROS::initialize(std::string name, costmap_2d::Costmap2DRO
       ROS_ERROR("SBPL initialization failed!");
       exit(1);
     }
-
-    // update mapdata
-    env_->SetMap(costmap_ros_->getCostmap()->getCharMap());
 
     planner_ = new LatticePathPlanner(env_);
 
@@ -239,7 +251,18 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   }
 
   // update mapdata
-  env_->SetMap(costmap_ros_->getCostmap()->getCharMap());
+  memcpy(map_data_, costmap_ros_->getCostmap()->getCharMap(),
+         current_env_width_ * current_env_height_ * sizeof(unsigned char));
+  if (allow_unknown_)
+  {
+    for (int i = 0; i < current_env_width_ * current_env_height_; i++)
+    {
+      if (map_data_[i] == costmap_2d::NO_INFORMATION)
+        map_data_[i] = costmap_2d::FREE_SPACE;
+    }
+  }
+
+  env_->SetMap(map_data_);
 
   ROS_DEBUG("[lattice_path_planner] run planner");
   std::vector<int> solution_stateIDs;

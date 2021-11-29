@@ -69,6 +69,8 @@ private:
                              //!< plan from scratch even if its an incremental planner
 
   unsigned char circumscribed_cost_;
+  bool allow_unknown_;  //!< Specifies whether or not to allow the planner to create plans that traverse unknown space
+  unsigned char* map_data_;
 
   std::string name_;
   costmap_2d::Costmap2DROS* costmap_ros_;  //!< manages the cost map for us
