@@ -102,12 +102,9 @@ void LatticePathPlannerROS::initialize(std::string name, costmap_2d::Costmap2DRO
 
     std::vector<sbpl_2Dpt_t> perimeterptsV;
     perimeterptsV.reserve(footprint_.size());
-    for (int i = 0; i < (int)footprint_.size(); ++i)
+    for (size_t i = 0; i < footprint_.size(); i++)
     {
-      sbpl_2Dpt_t pt;
-      pt.x = footprint_[i].x;
-      pt.y = footprint_[i].y;
-      perimeterptsV.push_back(pt);
+      perimeterptsV.emplace_back(footprint_[i].x, footprint_[i].y);
     }
 
     bool ret;
@@ -299,28 +296,27 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   // if the plan has zero points, add a single point to make move_base happy
   if (sbpl_path.empty())
   {
-    sbpl_xy_theta_pt_t s(start.pose.position.x - costmap_ros_->getCostmap()->getOriginX(),
-                         start.pose.position.y - costmap_ros_->getCostmap()->getOriginY(), theta_start);
-    sbpl_path.push_back(s);
+    sbpl_path.emplace_back(start.pose.position.x - costmap_ros_->getCostmap()->getOriginX(),
+                           start.pose.position.y - costmap_ros_->getCostmap()->getOriginY(), theta_start);
   }
 
   // sample raw path along sbpl path
   std::vector<sbpl_2Dpt_t> raw_path;
-  raw_path.push_back(sbpl_2Dpt_t(sbpl_path.front().x, sbpl_path.front().y));
+  raw_path.emplace_back(sbpl_path.front().x, sbpl_path.front().y);
   sbpl_xy_theta_pt_t last_pose = sbpl_path.front();
 
-  for (unsigned int i = 1; i < sbpl_path.size(); i++)
+  for (size_t i = 1; i < sbpl_path.size(); i++)
   {
     double dx = sbpl_path[i].x - last_pose.x;
     double dy = sbpl_path[i].y - last_pose.y;
     if (hypot(dx, dy) > sample_stepsize_)
     {
-      raw_path.push_back(sbpl_2Dpt_t(sbpl_path[i].x, sbpl_path[i].y));
+      raw_path.emplace_back(sbpl_path[i].x, sbpl_path[i].y);
       last_pose = sbpl_path[i];
     }
   }
   raw_path.pop_back();
-  raw_path.push_back(sbpl_2Dpt_t(sbpl_path.back().x, sbpl_path.back().y));
+  raw_path.emplace_back(sbpl_path.back().x, sbpl_path.back().y);
 
   // smooth the raw path
   std::vector<sbpl_2Dpt_t> smooth_path;
@@ -330,8 +326,8 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   }
   else
   {
-    for (int i = 0; i < (int)raw_path.size(); i++)
-      smooth_path.push_back(sbpl_2Dpt_t(raw_path[i].x, raw_path[i].y));
+    for (size_t i = 0; i < raw_path.size(); i++)
+      smooth_path.push_back(raw_path[i]);
   }
 
   ROS_DEBUG("Plan has %d points.", (int)smooth_path.size());
@@ -340,27 +336,41 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
   // return path planning result
   plan.clear();
   geometry_msgs::PoseStamped pose;
-  pose.header.frame_id = costmap_ros_->getGlobalFrameID();
-  pose.header.stamp = ros::Time::now();
-  for (unsigned int i = 0; i < smooth_path.size(); i++)
+  pose.header = start.header;
+  double dx, dy, yaw;
+
+  if (smooth_path.size() < 2)
   {
-    if (i == 0)
-      pose.pose = start.pose;
-    else if (i == smooth_path.size() - 1)
-      pose.pose = goal.pose;
-    else
+    pose.pose = start.pose;
+    plan.push_back(pose);
+  }
+  else
+  {
+    for (size_t i = 0; i < smooth_path.size(); i++)
     {
       pose.pose.position.x = smooth_path[i].x + costmap_ros_->getCostmap()->getOriginX();
       pose.pose.position.y = smooth_path[i].y + costmap_ros_->getCostmap()->getOriginY();
 
-      // get yaw from the orientation of the distance vector between pose_{i+1} and pose_{i}
-      double dx = smooth_path[i + 1].x - smooth_path[i].x;
-      double dy = smooth_path[i + 1].y - smooth_path[i].y;
-      double yaw = std::atan2(dy, dx);
-      pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
-    }
+      if (i == 0)
+      {
+        dx = smooth_path[i + 1].x - smooth_path[i].x;
+        dy = smooth_path[i + 1].y - smooth_path[i].y;
+      }
+      else if (i == smooth_path.size() - 1)
+      {
+        dx = smooth_path[i].x - smooth_path[i - 1].x;
+        dy = smooth_path[i].y - smooth_path[i - 1].y;
+      }
+      else
+      {
+        dx = 0.5 * (smooth_path[i + 1].x - smooth_path[i - 1].x);
+        dy = 0.5 * (smooth_path[i + 1].y - smooth_path[i - 1].y);
+      }
 
-    plan.push_back(pose);
+      yaw = atan2(dy, dx);
+      pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+      plan.push_back(pose);
+    }
   }
 
   publishGlobalPlan(plan);
@@ -370,11 +380,13 @@ bool LatticePathPlannerROS::makePlan(const geometry_msgs::PoseStamped& start, co
 
 void LatticePathPlannerROS::publishGlobalPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
 {
-  nav_msgs::Path gui_path;
-  gui_path.header.frame_id = costmap_ros_->getGlobalFrameID();
-  gui_path.header.stamp = ros::Time::now();
+  if (plan.empty())
+    return;
 
+  nav_msgs::Path gui_path;
+  gui_path.header = plan[0].header;
   gui_path.poses = plan;
+
   plan_pub_.publish(gui_path);
 }
 
