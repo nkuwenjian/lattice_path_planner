@@ -394,7 +394,7 @@ std::vector<int> LatticePathPlanner::GetSearchPath(int& solcost)
     AStarSearchState* nextstate = state->bestnextstate;
     if (actioncost != abs(state->g - nextstate->g))
     {
-      ROS_ERROR("ERROR: actioncost=%d is not matching the difference in g-values of %d",
+      ROS_DEBUG("ERROR: actioncost=%d is not matching the difference in g-values of %d",
         actioncost, abs(state->g - nextstate->g));
     }
 
