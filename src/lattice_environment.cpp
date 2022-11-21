@@ -492,21 +492,18 @@ void LatticeEnvironment::PrecomputeActionswithCompleteMotionPrimitive(std::vecto
       }
 
       // compute linear and angular time
-      double linear_distance = 0;
+      double linear_distance = 0.0;
       for (int i = 1; i < (int)EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV.size(); i++) {
         double x0 = EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV[i - 1].x;
         double y0 = EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV[i - 1].y;
         double x1 = EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV[i].x;
         double y1 = EnvNAVXYTHETALATCfg.ActionsV[tind][aind].intermptV[i].y;
-        double dx = x1 - x0;
-        double dy = y1 - y0;
-        linear_distance += sqrt(dx * dx + dy * dy);
+        linear_distance += hypot(x1 - x0, y1 - y0);
       }
       double linear_time = linear_distance / EnvNAVXYTHETALATCfg.nominalvel_mpersecs;
-      double angular_distance;
-      angular_distance = computeMinUnsignedAngleDiff(
+      double angular_distance = fabs(computeMinUnsignedAngleDiff(
         DiscTheta2Cont(EnvNAVXYTHETALATCfg.ActionsV[tind][aind].endtheta, EnvNAVXYTHETALATCfg.NumThetaDirs),
-        DiscTheta2Cont(EnvNAVXYTHETALATCfg.ActionsV[tind][aind].starttheta, EnvNAVXYTHETALATCfg.NumThetaDirs));
+        DiscTheta2Cont(EnvNAVXYTHETALATCfg.ActionsV[tind][aind].starttheta, EnvNAVXYTHETALATCfg.NumThetaDirs)));
 
       double angular_time = angular_distance / ((PI_CONST / 4.0) /
         EnvNAVXYTHETALATCfg.timetoturn45degsinplace_secs);
