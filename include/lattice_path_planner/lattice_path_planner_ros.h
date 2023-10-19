@@ -1,44 +1,73 @@
-#ifndef LATTICE_PATH_PLANNER_LATTICE_PATH_PLANNER_ROS_H
-#define LATTICE_PATH_PLANNER_LATTICE_PATH_PLANNER_ROS_H
+/******************************************************************************
+ * Copyright (c) 2023, NKU Mobile & Flying Robotics Lab
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Author: Jian Wen (nkuwenjian@gmail.com)
+ *****************************************************************************/
 
-// ROS
-#include <ros/ros.h>
-#include <geometry_msgs/PoseStamped.h>
+#pragma once
 
-// global representation
-#include <nav_core/base_global_planner.h>
+#include <memory>
+#include <string>
+#include <vector>
 
-// Costmap used for the map representation
-#include <costmap_2d/costmap_2d_ros.h>
+#include "costmap_2d/costmap_2d_ros.h"
+#include "geometry_msgs/PoseStamped.h"
+#include "nav_core/base_global_planner.h"
+#include "ros/ros.h"
 
-#include "lattice_path_planner/sbpl_exception.h"
-#include "lattice_path_planner/lattice_environment.h"
-#include "lattice_path_planner/lattice_path_planner.h"
-#include "lattice_path_planner/spline_interpolation.h"
+#include "lattice_path_planner/lattice_a_star/lattice_a_star.h"
 
-namespace lattice_path_planner
-{
-class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner
-{
-public:
+namespace lattice_path_planner {
+
+class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
+ public:
   /**
    * @brief  Default constructor for the LatticePathPlannerROS object
    */
-  LatticePathPlannerROS();
+  LatticePathPlannerROS() = default;
 
   /**
    * @brief  Constructor for the LatticePathPlannerROS object
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
-  LatticePathPlannerROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+  LatticePathPlannerROS(std::string name,
+                        costmap_2d::Costmap2DROS* costmap_ros);
 
   /**
    * @brief  Initialization function for the LatticePathPlannerROS object
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
    */
-  virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+  void initialize(std::string name,
+                  costmap_2d::Costmap2DROS* costmap_ros) override;
 
   /**
    * @brief Given a goal pose in the world, compute a plan
@@ -47,40 +76,56 @@ public:
    * @param plan The plan... filled by the planner
    * @return True if a valid plan was found, false otherwise
    */
-  virtual bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
-                        std::vector<geometry_msgs::PoseStamped>& plan);
+  bool makePlan(const geometry_msgs::PoseStamped& start,
+                const geometry_msgs::PoseStamped& goal,
+                std::vector<geometry_msgs::PoseStamped>& plan) override;
 
-  virtual ~LatticePathPlannerROS();
+  virtual ~LatticePathPlannerROS() = default;
 
-private:
-  void publishGlobalPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
-  unsigned char computeCircumscribedCost();
+ private:
+  bool UpdateCostmap(costmap_2d::Costmap2DROS* costmap_ros);
 
-private:
-  bool initialized_;
+  bool GetRosParameters(const ros::NodeHandle& nh, double* nominalvel_mpersecs,
+                        double* timetoturn45degsinplace_secs);
 
-  LatticePathPlanner* planner_;
-  LatticeEnvironment* env_;
-  SplineInterpolation interpolator_;
-  double sample_stepsize_;
+  uint8_t ComputeCircumscribedCost() const;
 
-  std::string primitive_filename_;  //!< where to find the motion primitives for the current robot
-  int force_scratch_limit_;  //!< the number of cells that have to be changed in the costmap to force the planner to
-                             //!< plan from scratch even if its an incremental planner
+  static std::vector<common::XYPoint> GetFootprint(
+      const std::vector<geometry_msgs::Point>& robot_footprint);
 
-  unsigned char circumscribed_cost_;
-  bool allow_unknown_;  //!< Specifies whether or not to allow the planner to create plans that traverse unknown space
-  unsigned char* map_data_;
+  static void GetStartAndEndConfigurations(
+      const geometry_msgs::PoseStamped& start,
+      const geometry_msgs::PoseStamped& goal, double origin_x, double origin_y,
+      double* start_x, double* start_y, double* start_phi, double* end_x,
+      double* end_y, double* end_phi);
+
+  static std::vector<std::vector<uint8_t>> GetGridMap(
+      const uint8_t* char_map, size_t size_x, size_t size_y,
+      bool treat_unknown_as_free);
+
+  static std::vector<common::XYPoint> InterpolateLatticeAStarPath(
+      const lattice_a_star::LatticeAStarResult& result,
+      double sample_step_size_m);
+
+  static void PopulateGlobalPlan(
+      const std::vector<common::XYPoint>& interpolated_path,
+      const geometry_msgs::PoseStamped& start, double origin_x, double origin_y,
+      std::vector<geometry_msgs::PoseStamped>* plan);
+
+  void PublishGlobalPlan(
+      const std::vector<geometry_msgs::PoseStamped>& plan) const;
+
+  std::unique_ptr<lattice_a_star::LatticeAStar> planner_ = nullptr;
+  bool initialized_ = false;
+  double sample_step_size_m_ = 0.0;
+  std::string primitive_filename_;
+  bool treat_unknown_as_free_ = false;
 
   std::string name_;
-  costmap_2d::Costmap2DROS* costmap_ros_;  //!< manages the cost map for us
-  std::vector<geometry_msgs::Point> footprint_;
-  unsigned int current_env_width_;
-  unsigned int current_env_height_;
-
+  const costmap_2d::Costmap2DROS* costmap_ros_ = nullptr;
+  const costmap_2d::Costmap2D* costmap_2d_ = nullptr;
+  costmap_2d::LayeredCostmap* layered_costmap_ = nullptr;
   ros::Publisher plan_pub_;
 };
 
 }  // namespace lattice_path_planner
-
-#endif  // LATTICE_PATH_PLANNER_LATTICE_PATH_PLANNER_ROS_H
