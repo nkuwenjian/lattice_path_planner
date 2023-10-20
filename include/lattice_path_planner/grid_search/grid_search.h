@@ -45,7 +45,13 @@
 namespace lattice_path_planner {
 namespace grid_search {
 
-enum class SearchType { A_STAR, DP };
+enum class TerminationCondition : int {
+  TERM_CONDITION_OPTPATHFOUND,
+  TERM_CONDITION_20PERCENTOVEROPTPATH,
+  TERM_CONDITION_TWOTIMESOPTPATH,
+  TERM_CONDITION_THREETIMESOPTPATH,
+  TERM_CONDITION_ALLCELLS
+};
 
 struct GridAStarResult {
   std::vector<int> x;
@@ -73,7 +79,8 @@ class GridSearch {
   virtual ~GridSearch();
   bool GenerateGridPath(int sx, int sy, int ex, int ey,
                         const std::vector<std::vector<uint8_t>>& grid_map,
-                        uint8_t obsthresh, SearchType search_type,
+                        uint8_t obsthresh,
+                        TerminationCondition termination_condition,
                         GridAStarResult* result);
   int CheckDpMap(int grid_x, int grid_y);
 
@@ -85,11 +92,13 @@ class GridSearch {
   bool IsWithinMap(int grid_x, int grid_y) const;
   bool IsValidCell(int grid_x, int grid_y) const;
   int CalcGridXYIndex(int grid_x, int grid_y) const;
+  int GetKey(Node2d* node) const;
   void UpdateSuccs(const Node2d& curr_node);
   void ComputeGridSearchActions();
   int GetActionCost(int curr_x, int curr_y, int action_id) const;
   void LoadGridAStarResult(GridAStarResult* result) const;
   void Clear();
+  static float GetTerminationFactor(TerminationCondition termination_condition);
 
   int max_grid_x_ = 0;
   int max_grid_y_ = 0;
@@ -98,7 +107,7 @@ class GridSearch {
   uint8_t obsthresh_;
   Node2d* start_node_ = nullptr;
   Node2d* end_node_ = nullptr;
-  SearchType search_type_;
+  TerminationCondition termination_condition_;
 
   std::vector<std::vector<Node2d>> dp_lookup_table_;
   std::unique_ptr<common::Heap> open_list_ = nullptr;

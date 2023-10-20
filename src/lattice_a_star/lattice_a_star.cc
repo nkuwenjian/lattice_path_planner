@@ -153,7 +153,8 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
   grid_a_star_heuristic_generator_->GenerateGridPath(
       end_node_->grid_x(), end_node_->grid_y(), start_node_->grid_x(),
       start_node_->grid_y(), env_cfg_.grid_map, env_cfg_.cost_inscribed_thresh,
-      grid_search::SearchType::DP, nullptr);
+      grid_search::TerminationCondition::TERM_CONDITION_TWOTIMESOPTPATH,
+      nullptr);
 
   // initialize start node and insert it into heap
   start_node_->set_g(0);
@@ -458,15 +459,7 @@ void LatticeAStar::LoadLatticeAStarResult(LatticeAStarResult* result) {
       const double intermpt_x = curr_x + action.intermptV[i].x();
       const double intermpt_y = curr_y + action.intermptV[i].y();
       const double intermpt_phi = action.intermptV[i].theta();
-      if (i == 0) {
-        // CHECK_NEAR(intermpt_x, curr_x, 1e-5);
-        // CHECK_NEAR(intermpt_y, curr_y, 1e-5);
-        // CHECK_NEAR(intermpt_phi, curr_phi, 1e-5);
-      } else if (i == action.intermptV.size() - 1) {
-        // CHECK_NEAR(intermpt_x, succ_x, 1e-5);
-        // CHECK_NEAR(intermpt_y, succ_y, 1e-5);
-        // CHECK_NEAR(intermpt_phi, succ_phi, 1e-5);
-      } else {
+      if (i > 0 && i < action.intermptV.size() - 1) {
         result->x.push_back(intermpt_x);
         result->y.push_back(intermpt_y);
         result->phi.push_back(intermpt_phi);

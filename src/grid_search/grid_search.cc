@@ -72,14 +72,14 @@ void GridSearch::Clear() {
 bool GridSearch::GenerateGridPath(
     int sx, int sy, int ex, int ey,
     const std::vector<std::vector<uint8_t>>& grid_map, uint8_t obsthresh,
-    SearchType search_type, GridAStarResult* result) {
+    TerminationCondition termination_condition, GridAStarResult* result) {
   const auto start_timestamp = std::chrono::system_clock::now();
 
   // clean up previous planning result
   Clear();
   obsthresh_ = obsthresh;
   grid_map_ = grid_map;
-  search_type_ = search_type;
+  termination_condition_ = termination_condition;
   iterations_++;
 
   // check the validity of start/goal
@@ -102,26 +102,17 @@ bool GridSearch::GenerateGridPath(
 
   // initialize start node and insert it into heap
   start_node_->set_g(0);
-  start_node_->set_h(search_type == SearchType::A_STAR ? CalcHeuCost(sx, sy)
-                                                       : 0);
-  open_list_->Insert(start_node_, search_type == SearchType::A_STAR
-                                      ? start_node_->g() + start_node_->h()
-                                      : start_node_->g());
+  start_node_->set_h(CalcHeuCost(sx, sy));
+  open_list_->Insert(start_node_, GetKey(start_node_));
 
-  int term_factor;
-  if (search_type == SearchType::A_STAR) {
-    term_factor = 1;
-  } else if (search_type == SearchType::DP) {
-    term_factor = 0;
-  } else {
-    LOG(WARNING) << "Unknown search type";
-    term_factor = 0;
-  }
+  float term_factor = GetTerminationFactor(termination_condition);
 
   // grid search begins
   size_t explored_node_num = 0;
   while (!open_list_->Empty() &&
-         end_node_->g() > term_factor * open_list_->GetMinKey()) {
+         end_node_->g() >
+             static_cast<int>(term_factor *
+                              static_cast<float>(open_list_->GetMinKey()))) {
     auto* node = dynamic_cast<Node2d*>(open_list_->Pop());
     CHECK_NOTNULL(node);
     CHECK_NE(node->g(), common::kInfiniteCost);
@@ -145,7 +136,8 @@ bool GridSearch::GenerateGridPath(
     LOG(ERROR) << "Grid searching return infinite cost (open_list ran out)";
     return false;
   }
-  if (search_type == SearchType::A_STAR) {
+  if (termination_condition ==
+      TerminationCondition::TERM_CONDITION_OPTPATHFOUND) {
     LoadGridAStarResult(result);
   }
   return true;
@@ -169,6 +161,13 @@ bool GridSearch::IsValidCell(const int grid_x, const int grid_y) const {
 int GridSearch::CalcGridXYIndex(const int grid_x, const int grid_y) const {
   DCHECK(IsWithinMap(grid_x, grid_y));
   return grid_x + grid_y * max_grid_x_;
+}
+
+int GridSearch::GetKey(Node2d* node) const {
+  return termination_condition_ ==
+                 TerminationCondition::TERM_CONDITION_OPTPATHFOUND
+             ? node->g() + node->h()
+             : node->g();
 }
 
 int GridSearch::GetActionCost(int curr_x, int curr_y, int action_id) const {
@@ -332,8 +331,7 @@ Node2d* GridSearch::GetNode(const int grid_x, const int grid_y) {
   DCHECK(IsWithinMap(grid_x, grid_y));
   Node2d* node = &dp_lookup_table_[grid_x][grid_y];
   if (node->iterations() != iterations_) {
-    node->set_h(search_type_ == SearchType::A_STAR ? CalcHeuCost(grid_x, grid_y)
-                                                   : 0);
+    node->set_h(CalcHeuCost(grid_x, grid_y));
     node->set_g(common::kInfiniteCost);
     node->set_pre_node(nullptr);
     node->set_heap_index(0);
@@ -371,13 +369,9 @@ void GridSearch::UpdateSuccs(const Node2d& curr_node) {
 
       // re-insert into heap if not closed yet
       if (succ_node->heap_index() == 0) {
-        open_list_->Insert(succ_node, search_type_ == SearchType::A_STAR
-                                          ? succ_node->g() + succ_node->h()
-                                          : succ_node->g());
+        open_list_->Insert(succ_node, GetKey(succ_node));
       } else {
-        open_list_->Update(succ_node, search_type_ == SearchType::A_STAR
-                                          ? succ_node->g() + succ_node->h()
-                                          : succ_node->g());
+        open_list_->Update(succ_node, GetKey(succ_node));
       }
     }
   }
@@ -416,6 +410,31 @@ int GridSearch::CheckDpMap(const int grid_x, const int grid_y) {
   CHECK_NOTNULL(node);
   CHECK_EQ(node->iterations(), iterations_);
   return node->g();
+}
+
+float GridSearch::GetTerminationFactor(
+    TerminationCondition termination_condition) {
+  float term_factor = 0.0F;
+  switch (termination_condition) {
+    case TerminationCondition::TERM_CONDITION_OPTPATHFOUND:
+      term_factor = 1.0F;
+      break;
+    case TerminationCondition::TERM_CONDITION_20PERCENTOVEROPTPATH:
+      term_factor = 1.0F / 1.2F;
+      break;
+    case TerminationCondition::TERM_CONDITION_TWOTIMESOPTPATH:
+      term_factor = 0.5F;
+      break;
+    case TerminationCondition::TERM_CONDITION_THREETIMESOPTPATH:
+      term_factor = 1.0F / 3.0F;
+      break;
+    case TerminationCondition::TERM_CONDITION_ALLCELLS:
+      term_factor = 0.0F;
+      break;
+    default:
+      term_factor = 0.0F;
+  }
+  return term_factor;
 }
 
 }  // namespace grid_search
