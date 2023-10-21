@@ -86,7 +86,7 @@ bool BreadthFirstSearch::ComputeDistanceFromPoints(
 
   ClearDistances();
 
-  for (size_t i = 0; i < x.size(); ++i) {
+  for (std::size_t i = 0U; i < x.size(); ++i) {
     if (x[i] < 0 || x[i] >= size_x_ || y[i] < 0 || y[i] >= size_y_) {
       LOG(ERROR) << "point is out of bounds!";
       return false;
@@ -125,7 +125,7 @@ void BreadthFirstSearch::ComputeDistances(
     if (cell.x() == 0 || cell.x() == size_x_ - 1 || cell.y() == 0 ||
         cell.y() == size_y_ - 1) {
       // we are on a boundary so we have to bounds check each successor
-      for (size_t i = 0; i < num_of_actions_; ++i) {
+      for (std::size_t i = 0U; i < num_of_actions_; ++i) {
         int x = cell.x() + dx_[i];
         int y = cell.y() + dy_[i];
         if (x < 0 || x >= size_x_ || y < 0 || y >= size_y_) {
@@ -138,7 +138,7 @@ void BreadthFirstSearch::ComputeDistances(
       }
     } else {
       // we are not near a boundary so no bounds check is required
-      for (size_t i = 0; i < num_of_actions_; ++i) {
+      for (std::size_t i = 0U; i < num_of_actions_; ++i) {
         int x = cell.x() + dx_[i];
         int y = cell.y() + dy_[i];
         if (dist_[x][y] < 0 && grid[x][y] < obs_thresh_) {

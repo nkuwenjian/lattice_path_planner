@@ -122,7 +122,7 @@ void ReadConfiguration(const std::string& file, int* max_grid_x,
     grid_map->at(x).resize(*max_grid_y);
   }
 
-  size_t col = 0;
+  std::size_t col = 0U;
   while (std::getline(fin, line)) {
     StrSplit(line, ' ', &strs);
     CHECK_EQ(strs.size(), *max_grid_x);

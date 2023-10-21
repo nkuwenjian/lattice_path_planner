@@ -65,7 +65,7 @@ void LatticePathPlannerROS::initialize(std::string name,
     return;
   }
 
-  // Update ROS parameters.
+  // Get parameters through ROS parameter server.
   ros::NodeHandle private_nh("~/" + name);
   VLOG(4) << "Name is " << name;
   name_ = name;
@@ -136,10 +136,11 @@ bool LatticePathPlannerROS::GetRosParameters(
   // Sanity checks.
   CHECK_NOTNULL(nominalvel_mpersecs);
   CHECK_NOTNULL(timetoturn45degsinplace_secs);
+  CHECK_NOTNULL(costmap_2d_);
 
   nh.param("nominalvel_mpersecs", *nominalvel_mpersecs, 0.4);
   nh.param("timetoturn45degsinplace_secs", *timetoturn45degsinplace_secs, 0.6);
-  nh.param("sample_step_size_m", sample_step_size_m_,
+  nh.param("min_sample_interval", min_sample_interval_,
            costmap_2d_->getResolution());
   nh.param("treat_unknown_as_free", treat_unknown_as_free_, true);
   if (!nh.getParam("primitive_filename", primitive_filename_)) {
@@ -150,9 +151,10 @@ bool LatticePathPlannerROS::GetRosParameters(
   VLOG(4) << std::fixed << "nominalvel_mpersecs: " << *nominalvel_mpersecs;
   VLOG(4) << std::fixed
           << "timetoturn45degsinplace_secs: " << *timetoturn45degsinplace_secs;
-  VLOG(4) << std::fixed << "sample_step_size_m: " << sample_step_size_m_;
+  VLOG(4) << std::fixed << "min_sample_interval: " << min_sample_interval_;
   VLOG(4) << std::boolalpha
           << "treat_unknown_as_free: " << treat_unknown_as_free_;
+  VLOG(4) << "primitive_filename: " << primitive_filename_;
   return true;
 }
 
@@ -206,7 +208,7 @@ void LatticePathPlannerROS::GetStartAndEndConfigurations(
   CHECK_NOTNULL(end_y);
   CHECK_NOTNULL(end_phi);
 
-  VLOG(4) << std::fixed << "Start point: " << start.pose.position.x << ","
+  VLOG(4) << std::fixed << "start point: " << start.pose.position.x << ","
           << start.pose.position.y;
   VLOG(4) << std::fixed << "end point: " << goal.pose.position.x << ","
           << goal.pose.position.y;
@@ -223,7 +225,7 @@ void LatticePathPlannerROS::GetStartAndEndConfigurations(
 }
 
 std::vector<std::vector<uint8_t>> LatticePathPlannerROS::GetGridMap(
-    const uint8_t* char_map, size_t size_x, size_t size_y,
+    const uint8_t* char_map, unsigned int size_x, unsigned int size_y,
     bool treat_unknown_as_free) {
   if (char_map == nullptr) {
     LOG(ERROR) << "char_map == nullptr";
@@ -231,9 +233,9 @@ std::vector<std::vector<uint8_t>> LatticePathPlannerROS::GetGridMap(
   }
   std::vector<std::vector<uint8_t>> grid_map;
   grid_map.resize(size_x);
-  for (size_t i = 0U; i < size_x; ++i) {
+  for (unsigned int i = 0U; i < size_x; ++i) {
     grid_map[i].resize(size_y);
-    for (size_t j = 0U; j < size_y; ++j) {
+    for (unsigned int j = 0U; j < size_y; ++j) {
       grid_map[i][j] = char_map[i + j * size_x];
       if (treat_unknown_as_free &&
           grid_map[i][j] == costmap_2d::NO_INFORMATION) {
@@ -247,11 +249,11 @@ std::vector<std::vector<uint8_t>> LatticePathPlannerROS::GetGridMap(
 std::vector<common::XYThetaPoint>
 LatticePathPlannerROS::InterpolateLatticeAStarPath(
     const lattice_a_star::LatticeAStarResult& result,
-    double sample_step_size_m) {
+    double min_sample_interval) {
   // Sanity checks.
   CHECK_EQ(result.x.size(), result.y.size());
   CHECK_EQ(result.x.size(), result.phi.size());
-  const size_t N = result.x.size();
+  const std::size_t N = result.x.size();
 
   // Sample raw path along lattice path.
   std::vector<common::XYThetaPoint> raw_path;
@@ -259,10 +261,10 @@ LatticePathPlannerROS::InterpolateLatticeAStarPath(
   double last_x = result.x.front();
   double last_y = result.y.front();
 
-  for (size_t i = 1U; i < N; ++i) {
+  for (std::size_t i = 1U; i < N; ++i) {
     double dx = result.x[i] - last_x;
     double dy = result.y[i] - last_y;
-    if (std::hypot(dx, dy) > sample_step_size_m) {
+    if (std::hypot(dx, dy) > min_sample_interval) {
       raw_path.emplace_back(result.x[i], result.y[i], result.phi[i]);
       last_x = result.x[i];
       last_y = result.y[i];
@@ -318,10 +320,10 @@ bool LatticePathPlannerROS::makePlan(
 
   // Interpolate raw lattice A star result to get dense path points.
   std::vector<common::XYThetaPoint> interpolated_path =
-      InterpolateLatticeAStarPath(result, sample_step_size_m_);
+      InterpolateLatticeAStarPath(result, min_sample_interval_);
 
   // Populate global plan.
-  PopulateGlobalPlan(interpolated_path, start, costmap_2d_->getOriginX(),
+  PopulateGlobalPlan(interpolated_path, start.header, costmap_2d_->getOriginX(),
                      costmap_2d_->getOriginY(), &plan);
 
   // Publish global plan.
@@ -332,14 +334,14 @@ bool LatticePathPlannerROS::makePlan(
 
 void LatticePathPlannerROS::PopulateGlobalPlan(
     const std::vector<common::XYThetaPoint>& interpolated_path,
-    const geometry_msgs::PoseStamped& start, double origin_x, double origin_y,
+    const std_msgs::Header& header, double origin_x, double origin_y,
     std::vector<geometry_msgs::PoseStamped>* plan) {
   // Sanity checks.
   CHECK_NOTNULL(plan);
 
   plan->clear();
   geometry_msgs::PoseStamped pose_stamped;
-  pose_stamped.header = start.header;
+  pose_stamped.header = header;
 
   for (const common::XYThetaPoint& pose : interpolated_path) {
     pose_stamped.pose.position.x = pose.x() + origin_x;
@@ -359,7 +361,6 @@ void LatticePathPlannerROS::PublishGlobalPlan(
   nav_msgs::Path gui_path;
   gui_path.header = plan.front().header;
   gui_path.poses = plan;
-
   plan_pub_.publish(gui_path);
 }
 

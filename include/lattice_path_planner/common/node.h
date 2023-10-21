@@ -34,7 +34,7 @@
 namespace lattice_path_planner {
 namespace common {
 
-enum class NodeStatus { OPEN, CLOSED };
+enum class NodeStatus : int { OPEN, CLOSED };
 
 class Node {
  public:

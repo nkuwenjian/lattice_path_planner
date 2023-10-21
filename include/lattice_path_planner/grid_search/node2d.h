@@ -49,12 +49,14 @@ class Node2d : public common::Node {
   void set_g(const int g) { g_ = g; }
   void set_h(const int h) { h_ = h; }
   void set_pre_node(const Node2d* pre_node) { pre_node_ = pre_node; }
-  void set_iterations(const size_t iterations) { iterations_ = iterations; }
+  void set_iterations(const std::size_t iterations) {
+    iterations_ = iterations;
+  }
   int grid_x() const { return grid_x_; }
   int grid_y() const { return grid_y_; }
   int g() const { return g_; }
   int h() const { return h_; }
-  size_t iterations() const { return iterations_; }
+  std::size_t iterations() const { return iterations_; }
   const Node2d* pre_node() const { return pre_node_; }
   bool operator==(const Node2d& rhs) const {
     return grid_x_ == rhs.grid_x_ && grid_y_ == rhs.grid_y_;
@@ -66,7 +68,7 @@ class Node2d : public common::Node {
   int g_ = common::kInfiniteCost;
   int h_ = 0;
   const Node2d* pre_node_ = nullptr;
-  size_t iterations_ = 0;
+  std::size_t iterations_ = 0U;
 };
 
 }  // namespace grid_search

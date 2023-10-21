@@ -162,7 +162,7 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
   open_list_->Insert(start_node_, start_node_->g() + start_node_->h());
 
   // Lattice A* begins
-  size_t explored_node_num = 0;
+  std::size_t explored_node_num = 0U;
   while (!open_list_->Empty() && end_node_->g() > open_list_->GetMinKey()) {
     // get the state
     auto* node = dynamic_cast<Node3d*>(open_list_->Pop());
@@ -433,7 +433,7 @@ void LatticeAStar::LoadLatticeAStarResult(LatticeAStarResult* result) {
 
   const std::vector<std::vector<primitive_generator::Primitive>>&
       motion_primitives = motion_primitive_generator_->motion_primitives();
-  for (size_t i = 0; i < astar_result.size() - 1; ++i) {
+  for (std::size_t i = 0U; i < astar_result.size() - 1U; ++i) {
     double curr_x = 0.0;
     double curr_y = 0.0;
     double curr_phi = 0.0;
@@ -455,7 +455,7 @@ void LatticeAStar::LoadLatticeAStarResult(LatticeAStarResult* result) {
                          [astar_result[i + 1]->action_idx().second];
     CHECK_EQ(astar_result[i]->grid_phi(), action.start_grid_phi);
     CHECK_EQ(astar_result[i + 1]->grid_phi(), action.end_grid_phi);
-    for (size_t i = 0; i < action.intermptV.size(); ++i) {
+    for (std::size_t i = 0U; i < action.intermptV.size(); ++i) {
       const double intermpt_x = curr_x + action.intermptV[i].x();
       const double intermpt_y = curr_y + action.intermptV[i].y();
       const double intermpt_phi = action.intermptV[i].theta();

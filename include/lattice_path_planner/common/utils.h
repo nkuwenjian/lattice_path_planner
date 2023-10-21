@@ -51,7 +51,7 @@ inline double NormalizeAngle(double angle) {
   double retangle = angle;
 
   // get to the range from -2PI, 2PI
-  if (fabs(retangle) > 2 * M_PI) {
+  if (std::abs(retangle) > 2 * M_PI) {
     retangle = retangle - static_cast<int>(retangle / (2 * M_PI)) * 2 * M_PI;
   }
 
@@ -79,11 +79,11 @@ inline double ComputeMinUnsignedAngleDiff(double angle1, double angle2) {
   angle1 = NormalizeAngle(angle1);
   angle2 = NormalizeAngle(angle2);
 
-  double anglediff = fabs(angle1 - angle2);
+  double anglediff = std::abs(angle1 - angle2);
 
   // see if we can take a shorter route
   if (anglediff > M_PI) {
-    anglediff = fabs(anglediff - 2 * M_PI);
+    anglediff = std::abs(anglediff - 2 * M_PI);
   }
 
   return anglediff;

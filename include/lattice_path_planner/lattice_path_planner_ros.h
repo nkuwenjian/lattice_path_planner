@@ -100,16 +100,16 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
       double* end_y, double* end_phi);
 
   static std::vector<std::vector<uint8_t>> GetGridMap(
-      const uint8_t* char_map, size_t size_x, size_t size_y,
+      const uint8_t* char_map, unsigned int size_x, unsigned int size_y,
       bool treat_unknown_as_free);
 
   static std::vector<common::XYThetaPoint> InterpolateLatticeAStarPath(
       const lattice_a_star::LatticeAStarResult& result,
-      double sample_step_size_m);
+      double min_sample_interval);
 
   static void PopulateGlobalPlan(
       const std::vector<common::XYThetaPoint>& interpolated_path,
-      const geometry_msgs::PoseStamped& start, double origin_x, double origin_y,
+      const std_msgs::Header& header, double origin_x, double origin_y,
       std::vector<geometry_msgs::PoseStamped>* plan);
 
   void PublishGlobalPlan(
@@ -117,7 +117,7 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
 
   std::unique_ptr<lattice_a_star::LatticeAStar> planner_ = nullptr;
   bool initialized_ = false;
-  double sample_step_size_m_ = 0.0;
+  double min_sample_interval_ = 0.0;
   std::string primitive_filename_;
   bool treat_unknown_as_free_ = false;
 

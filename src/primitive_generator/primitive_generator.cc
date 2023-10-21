@@ -230,8 +230,8 @@ void PrimitiveGenerator::PrecomputeActionswithCompleteMotionPrimitive() {
 
       // compute linear and angular time
       double linear_distance = 0.0;
-      for (size_t i = 1; i < motion_primitives_[tind][mind].intermptV.size();
-           ++i) {
+      for (std::size_t i = 1U;
+           i < motion_primitives_[tind][mind].intermptV.size(); ++i) {
         double x0 = motion_primitives_[tind][mind].intermptV[i - 1].x();
         double y0 = motion_primitives_[tind][mind].intermptV[i - 1].y();
         double x1 = motion_primitives_[tind][mind].intermptV[i].x();

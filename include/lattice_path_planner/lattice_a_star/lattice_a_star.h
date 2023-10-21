@@ -107,8 +107,8 @@ class LatticeAStar {
 
   Node3d* start_node_ = nullptr;
   Node3d* end_node_ = nullptr;
-  size_t iterations_ = 0;
-  size_t created_node_num_ = 0;
+  std::size_t iterations_ = 0U;
+  std::size_t created_node_num_ = 0U;
 };
 
 }  // namespace lattice_a_star

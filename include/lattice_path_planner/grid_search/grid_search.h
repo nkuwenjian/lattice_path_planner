@@ -112,7 +112,7 @@ class GridSearch {
   std::vector<std::vector<Node2d>> dp_lookup_table_;
   std::unique_ptr<common::Heap> open_list_ = nullptr;
   std::vector<common::NodeStatus> closed_list_;
-  size_t iterations_ = 0;
+  std::size_t iterations_ = 0U;
 
   GridSearchPrimitives actions_;
 };

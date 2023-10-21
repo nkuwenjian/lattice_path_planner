@@ -68,7 +68,7 @@ class BreadthFirstSearch {
   int size_y_;
   int obs_thresh_;
 
-  const size_t num_of_actions_ = 8;
+  const std::size_t num_of_actions_ = 8U;
   std::vector<int> dx_;
   std::vector<int> dy_;
 };

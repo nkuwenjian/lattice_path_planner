@@ -50,13 +50,15 @@ class Node3d : public common::Node {
   void set_g(const int g) { g_ = g; }
   void set_h(const int h) { h_ = h; }
   void set_pre_node(const Node3d* pre_node) { pre_node_ = pre_node; }
-  void set_iterations(const size_t iterations) { iterations_ = iterations; }
+  void set_iterations(const std::size_t iterations) {
+    iterations_ = iterations;
+  }
   int grid_x() const { return grid_x_; }
   int grid_y() const { return grid_y_; }
   int grid_phi() const { return grid_phi_; }
   int g() const { return g_; }
   int h() const { return h_; }
-  size_t iterations() const { return iterations_; }
+  std::size_t iterations() const { return iterations_; }
   void set_action_idx(std::pair<int, int>&& action_idx) {
     action_idx_ = std::move(action_idx);
   }
@@ -75,7 +77,7 @@ class Node3d : public common::Node {
   int h_ = 0;
   const Node3d* pre_node_ = nullptr;
   std::pair<int, int> action_idx_;
-  size_t iterations_ = 0;
+  std::size_t iterations_ = 0U;
 };
 
 }  // namespace lattice_a_star

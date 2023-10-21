@@ -39,7 +39,7 @@
 namespace lattice_path_planner {
 
 std::vector<common::XYThetaPoint> CubicSplineInterpolation::Interpolate(
-    const std::vector<common::XYThetaPoint>& path, size_t num_points) {
+    const std::vector<common::XYThetaPoint>& path, std::size_t num_points) {
   // Sanity checks.
   if (path.size() < 3U) {
     LOG(ERROR) << "The number of path points to be interpolated shound be "
@@ -72,14 +72,14 @@ std::vector<common::XYThetaPoint> CubicSplineInterpolation::Interpolate(
   std::vector<common::XYThetaPoint> spline;
   spline.reserve(num_points);
   // Evaluates spline and outputs data to be used with gnuplot.
-  for (size_t i = 0U; i < num_points; ++i) {
+  for (std::size_t i = 0U; i < num_points; ++i) {
     double t = tmin + static_cast<double>(i) * (tmax - tmin) /
                           static_cast<double>(num_points - 1U);
     spline.emplace_back(sx(t), sy(t), 0.0);
   }
 
   // Compute heading via finite difference approximation.
-  for (size_t i = 0U; i < spline.size(); ++i) {
+  for (std::size_t i = 0U; i < spline.size(); ++i) {
     double dx = 0.0;
     double dy = 0.0;
     if (i == 0U) {
@@ -112,7 +112,7 @@ void CubicSplineInterpolation::CreateTimeGrid(std::vector<double>* T,
   // function of time: (X(t), Y(t)).
   T->resize(X.size());
   T->front() = 0.0;
-  for (size_t i = 1U; i < T->size(); ++i) {
+  for (std::size_t i = 1U; i < T->size(); ++i) {
     // Time is proportional to the distance, i.e., we go at a const speed.
     T->at(i) = T->at(i - 1) + std::hypot(X[i] - X[i - 1], Y[i] - Y[i - 1]);
   }

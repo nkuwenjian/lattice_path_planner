@@ -68,7 +68,7 @@ XYCellBounds FootprintHelper::GetMotionXYCells(
   std::set<XYCell> cell_set = first_cell_set;
 
   // call get footprint on the rest of the points
-  for (size_t i = 1; i < poses.size(); i++) {
+  for (std::size_t i = 1U; i < poses.size(); ++i) {
     tmp.set_x(poses[i].x() + offset.x());
     tmp.set_y(poses[i].y() + offset.y());
     tmp.set_theta(poses[i].theta());
@@ -133,8 +133,8 @@ XYCellBounds FootprintHelper::GetFootprintXYCells(
 
   // run bressenham line algorithm around the polygon (add them to the cells
   // set) while doing that find the min and max (x,y) and the average x and y
-  double cth = cos(pose.theta());
-  double sth = sin(pose.theta());
+  double cth = std::cos(pose.theta());
+  double sth = std::sin(pose.theta());
 
   std::vector<XYCell> disc_polygon;
   disc_polygon.reserve(polygon.size() + 1);
@@ -176,15 +176,15 @@ XYCellBounds FootprintHelper::GetFootprintXYCells(
   int sizey = (maxy - miny + 1) + 2;
   std::vector<std::vector<int>> grid;
   grid.resize(sizex);
-  for (int i = 0; i < sizex; i++) {
+  for (int i = 0; i < sizex; ++i) {
     grid[i].resize(sizey);
-    for (int j = 0; j < sizey; j++) {
+    for (int j = 0; j < sizey; ++j) {
       grid[i][j] = 0;
     }
   }
 
   // plot line points on the grid
-  for (size_t i = 1; i < disc_polygon.size(); i++) {
+  for (std::size_t i = 1U; i < disc_polygon.size(); ++i) {
     int x0 = disc_polygon[i - 1].x() - minx + 1;
     int y0 = disc_polygon[i - 1].y() - miny + 1;
     int x1 = disc_polygon[i].x() - minx + 1;
@@ -253,8 +253,8 @@ XYCellBounds FootprintHelper::GetFootprintXYCells(
   bfs.ComputeDistanceFromPoint(grid, 0, 0);
 
   // add all cells expanded to the cells set
-  for (int i = 1; i < sizex - 1; i++) {
-    for (int j = 1; j < sizey - 1; j++) {
+  for (int i = 1; i < sizex - 1; ++i) {
+    for (int j = 1; j < sizey - 1; ++j) {
       if (bfs.GetDistance(i, j) < 0) {
         cells->insert({i - 1 + minx, j - 1 + miny});
       }

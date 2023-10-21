@@ -108,7 +108,7 @@ bool GridSearch::GenerateGridPath(
   float term_factor = GetTerminationFactor(termination_condition);
 
   // grid search begins
-  size_t explored_node_num = 0;
+  std::size_t explored_node_num = 0U;
   while (!open_list_->Empty() &&
          end_node_->g() >
              static_cast<int>(term_factor *
