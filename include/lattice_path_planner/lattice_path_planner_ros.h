@@ -103,12 +103,12 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
       const uint8_t* char_map, size_t size_x, size_t size_y,
       bool treat_unknown_as_free);
 
-  static std::vector<common::XYPoint> InterpolateLatticeAStarPath(
+  static std::vector<common::XYThetaPoint> InterpolateLatticeAStarPath(
       const lattice_a_star::LatticeAStarResult& result,
       double sample_step_size_m);
 
   static void PopulateGlobalPlan(
-      const std::vector<common::XYPoint>& interpolated_path,
+      const std::vector<common::XYThetaPoint>& interpolated_path,
       const geometry_msgs::PoseStamped& start, double origin_x, double origin_y,
       std::vector<geometry_msgs::PoseStamped>* plan);
 

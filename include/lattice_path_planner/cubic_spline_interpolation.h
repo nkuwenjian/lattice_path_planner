@@ -43,8 +43,8 @@ class CubicSplineInterpolation {
  public:
   CubicSplineInterpolation() = delete;
 
-  static void Interpolate(const std::vector<common::XYPoint>& path,
-                          std::vector<common::XYPoint>* spline);
+  static std::vector<common::XYThetaPoint> Interpolate(
+      const std::vector<common::XYThetaPoint>& path, size_t num_points = 1000U);
 
  private:
   static void CreateTimeGrid(std::vector<double>* T, double* tmin, double* tmax,

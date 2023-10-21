@@ -38,41 +38,63 @@
 
 namespace lattice_path_planner {
 
-void CubicSplineInterpolation::Interpolate(
-    const std::vector<common::XYPoint>& path,
-    std::vector<common::XYPoint>* spline) {
-  CHECK_NOTNULL(spline);
+std::vector<common::XYThetaPoint> CubicSplineInterpolation::Interpolate(
+    const std::vector<common::XYThetaPoint>& path, size_t num_points) {
+  // Sanity checks.
   if (path.size() < 3U) {
-    return;
+    LOG(ERROR) << "The number of path points to be interpolated shound be "
+                  "greater than 2.";
+    return std::vector<common::XYThetaPoint>();
   }
 
-  // setup auxiliary "time grid"
+  // Setup auxiliary "time grid".
   double tmin = 0.0;
   double tmax = 0.0;
   std::vector<double> T;
   std::vector<double> X;
   std::vector<double> Y;
+  X.reserve(path.size());
+  Y.reserve(path.size());
 
-  for (const common::XYPoint& point : path) {
+  for (const common::XYThetaPoint& point : path) {
     X.push_back(point.x());
     Y.push_back(point.y());
   }
 
   CreateTimeGrid(&T, &tmin, &tmax, X, Y);
 
-  // define a spline for each coordinate x, y
-  tk::spline sx, sy;
+  // Define a spline for each coordinate x, y.
+  tk::spline sx;
+  tk::spline sy;
   sx.set_points(T, X);
   sy.set_points(T, Y);
 
-  spline->clear();
-  // evaluates spline and outputs data to be used with gnuplot
-  size_t n = 1000U;  // number of grid points to plot the spline
-  for (size_t i = 0U; i < n; ++i) {
+  std::vector<common::XYThetaPoint> spline;
+  spline.reserve(num_points);
+  // Evaluates spline and outputs data to be used with gnuplot.
+  for (size_t i = 0U; i < num_points; ++i) {
     double t = tmin + static_cast<double>(i) * (tmax - tmin) /
-                          static_cast<double>(n - 1);
-    spline->emplace_back(sx(t), sy(t));
+                          static_cast<double>(num_points - 1U);
+    spline.emplace_back(sx(t), sy(t), 0.0);
   }
+
+  // Compute heading via finite difference approximation.
+  for (size_t i = 0U; i < spline.size(); ++i) {
+    double dx = 0.0;
+    double dy = 0.0;
+    if (i == 0U) {
+      dx = spline[i + 1].x() - spline[i].x();
+      dy = spline[i + 1].y() - spline[i].y();
+    } else if (i == spline.size() - 1U) {
+      dx = spline[i].x() - spline[i - 1].x();
+      dy = spline[i].y() - spline[i - 1].y();
+    } else {
+      dx = 0.5 * (spline[i + 1].x() - spline[i - 1].x());
+      dy = 0.5 * (spline[i + 1].y() - spline[i - 1].y());
+    }
+    spline[i].set_theta(std::atan2(dy, dx));
+  }
+  return spline;
 }
 
 void CubicSplineInterpolation::CreateTimeGrid(std::vector<double>* T,
@@ -86,12 +108,12 @@ void CubicSplineInterpolation::CreateTimeGrid(std::vector<double>* T,
   CHECK_EQ(X.size(), Y.size());
   CHECK_GT(X.size(), 2U);
 
-  // setup a "time variable" so that we can interpolate x and y
-  // coordinates as a function of time: (X(t), Y(t))
+  // Setup a "time variable" so that we can interpolate x and y coordinates as a
+  // function of time: (X(t), Y(t)).
   T->resize(X.size());
   T->front() = 0.0;
   for (size_t i = 1U; i < T->size(); ++i) {
-    // time is proportional to the distance, i.e. we go at a const speed
+    // Time is proportional to the distance, i.e., we go at a const speed.
     T->at(i) = T->at(i - 1) + std::hypot(X[i] - X[i - 1], Y[i] - Y[i - 1]);
   }
 

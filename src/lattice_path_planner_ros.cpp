@@ -244,7 +244,8 @@ std::vector<std::vector<uint8_t>> LatticePathPlannerROS::GetGridMap(
   return grid_map;
 }
 
-std::vector<common::XYPoint> LatticePathPlannerROS::InterpolateLatticeAStarPath(
+std::vector<common::XYThetaPoint>
+LatticePathPlannerROS::InterpolateLatticeAStarPath(
     const lattice_a_star::LatticeAStarResult& result,
     double sample_step_size_m) {
   // Sanity checks.
@@ -253,8 +254,8 @@ std::vector<common::XYPoint> LatticePathPlannerROS::InterpolateLatticeAStarPath(
   const size_t N = result.x.size();
 
   // Sample raw path along lattice path.
-  std::vector<common::XYPoint> raw_path;
-  raw_path.emplace_back(result.x.front(), result.y.front());
+  std::vector<common::XYThetaPoint> raw_path;
+  raw_path.emplace_back(result.x.front(), result.y.front(), result.phi.front());
   double last_x = result.x.front();
   double last_y = result.y.front();
 
@@ -262,22 +263,20 @@ std::vector<common::XYPoint> LatticePathPlannerROS::InterpolateLatticeAStarPath(
     double dx = result.x[i] - last_x;
     double dy = result.y[i] - last_y;
     if (std::hypot(dx, dy) > sample_step_size_m) {
-      raw_path.emplace_back(result.x[i], result.y[i]);
+      raw_path.emplace_back(result.x[i], result.y[i], result.phi[i]);
       last_x = result.x[i];
       last_y = result.y[i];
     }
   }
   raw_path.pop_back();
-  raw_path.emplace_back(result.x.back(), result.y.back());
+  raw_path.emplace_back(result.x.back(), result.y.back(), result.phi.back());
+
+  if (raw_path.size() < 3U) {
+    return raw_path;
+  }
 
   // Smooth the raw path via cubic spline interpolation.
-  std::vector<common::XYPoint> interpolated_path;
-  if (raw_path.size() > 2U) {
-    CubicSplineInterpolation::Interpolate(raw_path, &interpolated_path);
-  } else {
-    interpolated_path = raw_path;
-  }
-  return interpolated_path;
+  return CubicSplineInterpolation::Interpolate(raw_path);
 }
 
 bool LatticePathPlannerROS::makePlan(
@@ -318,7 +317,7 @@ bool LatticePathPlannerROS::makePlan(
   }
 
   // Interpolate raw lattice A star result to get dense path points.
-  std::vector<common::XYPoint> interpolated_path =
+  std::vector<common::XYThetaPoint> interpolated_path =
       InterpolateLatticeAStarPath(result, sample_step_size_m_);
 
   // Populate global plan.
@@ -332,42 +331,22 @@ bool LatticePathPlannerROS::makePlan(
 }
 
 void LatticePathPlannerROS::PopulateGlobalPlan(
-    const std::vector<common::XYPoint>& interpolated_path,
+    const std::vector<common::XYThetaPoint>& interpolated_path,
     const geometry_msgs::PoseStamped& start, double origin_x, double origin_y,
     std::vector<geometry_msgs::PoseStamped>* plan) {
   // Sanity checks.
   CHECK_NOTNULL(plan);
 
   plan->clear();
-  geometry_msgs::PoseStamped pose;
-  pose.header = start.header;
+  geometry_msgs::PoseStamped pose_stamped;
+  pose_stamped.header = start.header;
 
-  if (interpolated_path.size() < 2U) {
-    pose.pose = start.pose;
-    plan->push_back(pose);
-    return;
-  }
-
-  for (size_t i = 0U; i < interpolated_path.size(); ++i) {
-    pose.pose.position.x = interpolated_path[i].x() + origin_x;
-    pose.pose.position.y = interpolated_path[i].y() + origin_y;
-
-    double dx = 0.0;
-    double dy = 0.0;
-    if (i == 0U) {
-      dx = interpolated_path[i + 1].x() - interpolated_path[i].x();
-      dy = interpolated_path[i + 1].y() - interpolated_path[i].y();
-    } else if (i == interpolated_path.size() - 1) {
-      dx = interpolated_path[i].x() - interpolated_path[i - 1].x();
-      dy = interpolated_path[i].y() - interpolated_path[i - 1].y();
-    } else {
-      dx = 0.5 * (interpolated_path[i + 1].x() - interpolated_path[i - 1].x());
-      dy = 0.5 * (interpolated_path[i + 1].y() - interpolated_path[i - 1].y());
-    }
-
-    double yaw = std::atan2(dy, dx);
-    pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
-    plan->push_back(pose);
+  for (const common::XYThetaPoint& pose : interpolated_path) {
+    pose_stamped.pose.position.x = pose.x() + origin_x;
+    pose_stamped.pose.position.y = pose.y() + origin_y;
+    pose_stamped.pose.orientation =
+        tf::createQuaternionMsgFromYaw(pose.theta());
+    plan->push_back(pose_stamped);
   }
 }
 
