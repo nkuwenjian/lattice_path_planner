@@ -1,0 +1,5 @@
+LatticePathPlannerROS:
+  nominalvel_mpersecs: 0.4
+  timetoturn45degsinplace_secs: 0.6
+  min_sample_interval: 0.1
+  treat_unknown_as_free: true

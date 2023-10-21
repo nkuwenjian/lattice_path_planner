@@ -53,9 +53,9 @@ LatticePathPlannerROS::LatticePathPlannerROS(
 
 void LatticePathPlannerROS::initialize(std::string name,
                                        costmap_2d::Costmap2DROS* costmap_ros) {
-  // Check whether lattice path planner has been initialized.
+  // Check if LatticePathPlannerROS has been initialized.
   if (initialized_) {
-    LOG(INFO) << "Lattice path planner has been initialized.";
+    LOG(INFO) << "LatticePathPlannerROS has been initialized.";
     return;
   }
 
@@ -89,17 +89,13 @@ void LatticePathPlannerROS::initialize(std::string name,
     // cannot detect this problem. If the cost_scaling_factor is too large,
     // SBPL won't run into obstacles, but will always perform an expensive
     // footprint check, no matter how far the nearest obstacle is.
-    LOG(WARNING) << std::fixed
-                 << "The costmap value at the robot's circumscribed radius ("
-                 << layered_costmap_->getCircumscribedRadius() << " m) is 0.";
-    LOG(WARNING) << "SBPL performance will suffer.";
-    LOG(WARNING) << "Please decrease the costmap's cost_scaling_factor.";
+    LOG(ERROR) << std::fixed
+               << "The costmap value at the robot's circumscribed radius ("
+               << layered_costmap_->getCircumscribedRadius() << " m) is 0.";
+    return;
   }
 
-  // Create and initialize lattice path planner.
-  if (planner_ != nullptr) {
-    planner_.reset();
-  }
+  // Create and initialize LatticePathPlannerROS.
   planner_ = std::make_unique<lattice_a_star::LatticeAStar>();
   planner_->Init(
       costmap_2d_->getSizeInCellsX(), costmap_2d_->getSizeInCellsY(),
@@ -108,9 +104,10 @@ void LatticePathPlannerROS::initialize(std::string name,
       nominalvel_mpersecs, timetoturn45degsinplace_secs, footprint,
       const_cast<char*>(primitive_filename_.c_str()));
 
-  LOG(INFO) << "Lattice path planner is initialized successfully.";
-  plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+  global_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+
   initialized_ = true;
+  LOG(INFO) << "LatticePathPlannerROS is initialized successfully.";
 }
 
 bool LatticePathPlannerROS::UpdateCostmap(
@@ -170,7 +167,7 @@ uint8_t LatticePathPlannerROS::ComputeCircumscribedCost() const {
     return 0U;
   }
 
-  // check if the costmap has an inflation layer
+  // Check if the costmap has an inflation layer.
   for (auto layer = plugins->begin(); layer != plugins->end(); ++layer) {
     auto inflation_layer =
         boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
@@ -285,8 +282,9 @@ bool LatticePathPlannerROS::makePlan(
     const geometry_msgs::PoseStamped& start,
     const geometry_msgs::PoseStamped& goal,
     std::vector<geometry_msgs::PoseStamped>& plan) {
+  // Check if LatticePathPlannerROS has been initialized.
   if (!initialized_) {
-    LOG(ERROR) << "Lattice path planner has not been initialized.";
+    LOG(ERROR) << "LatticePathPlannerROS has not been initialized.";
     return false;
   }
 
@@ -327,7 +325,7 @@ bool LatticePathPlannerROS::makePlan(
                      costmap_2d_->getOriginY(), &plan);
 
   // Publish global plan.
-  PublishGlobalPlan(plan);
+  PublishPlan(plan, global_plan_pub_);
 
   return true;
 }
@@ -352,8 +350,9 @@ void LatticePathPlannerROS::PopulateGlobalPlan(
   }
 }
 
-void LatticePathPlannerROS::PublishGlobalPlan(
-    const std::vector<geometry_msgs::PoseStamped>& plan) const {
+void LatticePathPlannerROS::PublishPlan(
+    const std::vector<geometry_msgs::PoseStamped>& plan,
+    const ros::Publisher& pub) {
   if (plan.empty()) {
     return;
   }
@@ -361,7 +360,7 @@ void LatticePathPlannerROS::PublishGlobalPlan(
   nav_msgs::Path gui_path;
   gui_path.header = plan.front().header;
   gui_path.poses = plan;
-  plan_pub_.publish(gui_path);
+  pub.publish(gui_path);
 }
 
 }  // namespace lattice_path_planner

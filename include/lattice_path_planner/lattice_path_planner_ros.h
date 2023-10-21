@@ -112,8 +112,8 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
       const std_msgs::Header& header, double origin_x, double origin_y,
       std::vector<geometry_msgs::PoseStamped>* plan);
 
-  void PublishGlobalPlan(
-      const std::vector<geometry_msgs::PoseStamped>& plan) const;
+  static void PublishPlan(const std::vector<geometry_msgs::PoseStamped>& plan,
+                          const ros::Publisher& pub);
 
   std::unique_ptr<lattice_a_star::LatticeAStar> planner_ = nullptr;
   bool initialized_ = false;
@@ -125,7 +125,7 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
   const costmap_2d::Costmap2DROS* costmap_ros_ = nullptr;
   const costmap_2d::Costmap2D* costmap_2d_ = nullptr;
   costmap_2d::LayeredCostmap* layered_costmap_ = nullptr;
-  ros::Publisher plan_pub_;
+  ros::Publisher global_plan_pub_;
 };
 
 }  // namespace lattice_path_planner
