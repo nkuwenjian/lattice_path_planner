@@ -83,7 +83,7 @@ class LatticeAStar {
   double EuclidHeuCost(int x1, int y1, int x2, int y2) const;
 
   // check collision and validity
-  bool ValidityCheck(const Node3d& node) const;
+  bool ValidityCheck(const Node3d* node) const;
   bool IsValidCell(int grid_x, int grid_y) const;
 
   bool WorldToGrid(double x, double y, double phi, int* grid_x, int* grid_y,
@@ -91,7 +91,7 @@ class LatticeAStar {
   bool GridToWorld(int grid_x, int grid_y, int grid_phi, double* x, double* y,
                    double* phi) const;
   bool IsWithinMap(int grid_x, int grid_y) const;
-  void UpdateSuccs(const Node3d& curr_node);
+  void UpdateSuccs(const Node3d* curr_node);
   int GetActionCost(int curr_x, int curr_y,
                     const primitive_generator::Primitive& action) const;
   Node3d* GetNode(int grid_x, int grid_y, int grid_phi);

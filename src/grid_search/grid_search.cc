@@ -83,22 +83,9 @@ bool GridSearch::GenerateGridPath(
   iterations_++;
 
   // check the validity of start/goal
-  if (!SetStart(sx, sy)) {
-    LOG(ERROR) << "GridSearch is called on invalid start (" << sx << "," << sy
-               << ")";
+  if (!SetStartAndEndConfiguration(sx, sy, ex, ey)) {
     return false;
   }
-  CHECK_NOTNULL(start_node_);
-  // since the goal has not been set yet, the start node's h value is set to 0
-  CHECK_EQ(start_node_->h(), 0);
-
-  if (!SetEnd(ex, ey)) {
-    LOG(ERROR) << "GridSearch is called on invalid end (" << ex << "," << ey
-               << ")";
-    return false;
-  }
-  CHECK_NOTNULL(end_node_);
-  CHECK_EQ(end_node_->h(), 0);
 
   // initialize start node and insert it into heap
   start_node_->set_g(0);
@@ -121,7 +108,7 @@ bool GridSearch::GenerateGridPath(
 
     // new expand
     ++explored_node_num;
-    UpdateSuccs(*node);
+    UpdateSuccs(node);
   }
 
   const auto end_timestamp = std::chrono::system_clock::now();
@@ -163,7 +150,8 @@ int GridSearch::CalcGridXYIndex(const int grid_x, const int grid_y) const {
   return grid_x + grid_y * max_grid_x_;
 }
 
-int GridSearch::GetKey(Node2d* node) const {
+int GridSearch::GetKey(const Node2d* node) const {
+  CHECK_NOTNULL(node);
   return termination_condition_ ==
                  TerminationCondition::TERM_CONDITION_OPTPATHFOUND
              ? node->g() + node->h()
@@ -327,6 +315,26 @@ bool GridSearch::SetEnd(const int end_x, const int end_y) {
   return true;
 }
 
+bool GridSearch::SetStartAndEndConfiguration(int sx, int sy, int ex, int ey) {
+  if (!SetStart(sx, sy)) {
+    LOG(ERROR) << "VoronoiPlanner is called on invalid start (" << sx << ","
+               << sy << ")";
+    return false;
+  }
+  CHECK_NOTNULL(start_node_);
+  // since the goal has not been set yet, the start node's h value is set to 0
+  CHECK_EQ(start_node_->h(), 0);
+
+  if (!SetEnd(ex, ey)) {
+    LOG(ERROR) << "VoronoiPlanner is called on invalid end (" << ex << "," << ey
+               << ")";
+    return false;
+  }
+  CHECK_NOTNULL(end_node_);
+  CHECK_EQ(end_node_->h(), 0);
+  return true;
+}
+
 Node2d* GridSearch::GetNode(const int grid_x, const int grid_y) {
   DCHECK(IsWithinMap(grid_x, grid_y));
   Node2d* node = &dp_lookup_table_[grid_x][grid_y];
@@ -340,9 +348,10 @@ Node2d* GridSearch::GetNode(const int grid_x, const int grid_y) {
   return node;
 }
 
-void GridSearch::UpdateSuccs(const Node2d& curr_node) {
-  const int curr_x = curr_node.grid_x();
-  const int curr_y = curr_node.grid_y();
+void GridSearch::UpdateSuccs(const Node2d* curr_node) {
+  CHECK_NOTNULL(curr_node);
+  const int curr_x = curr_node->grid_x();
+  const int curr_y = curr_node->grid_y();
   for (int action_id = 0; action_id < common::kNumOfGridSearchActions;
        ++action_id) {
     const int succ_x = curr_x + actions_.dx[action_id];
@@ -363,9 +372,9 @@ void GridSearch::UpdateSuccs(const Node2d& curr_node) {
     Node2d* succ_node = GetNode(succ_x, succ_y);
     // see if we can decrease the value of successive node taking into account
     // the cost of action
-    if (succ_node->g() > curr_node.g() + action_cost) {
-      succ_node->set_g(curr_node.g() + action_cost);
-      succ_node->set_pre_node(&curr_node);
+    if (succ_node->g() > curr_node->g() + action_cost) {
+      succ_node->set_g(curr_node->g() + action_cost);
+      succ_node->set_pre_node(curr_node);
 
       // re-insert into heap if not closed yet
       if (succ_node->heap_index() == 0) {

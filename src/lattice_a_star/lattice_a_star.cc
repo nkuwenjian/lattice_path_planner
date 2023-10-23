@@ -84,7 +84,7 @@ bool LatticeAStar::SetStart(double start_x, double start_y, double start_phi) {
 
   // create start node
   start_node_ = GetNode(start_grid_x, start_grid_y, start_grid_phi);
-  if (!ValidityCheck(*start_node_)) {
+  if (!ValidityCheck(start_node_)) {
     LOG(ERROR) << "Invalid start node: (" << start_grid_x << "," << start_grid_y
                << "," << start_grid_phi << ")";
     return false;
@@ -100,7 +100,7 @@ bool LatticeAStar::SetEnd(double end_x, double end_y, double end_phi) {
 
   // create end node.
   end_node_ = GetNode(end_grid_x, end_grid_y, end_grid_phi);
-  if (!ValidityCheck(*end_node_)) {
+  if (!ValidityCheck(end_node_)) {
     LOG(ERROR) << "Invalid end node: (" << end_grid_x << "," << end_grid_y
                << "," << end_grid_phi << ")";
     return false;
@@ -172,7 +172,7 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
         node->grid_x(), node->grid_y())] = common::NodeStatus::CLOSED;
     // new expand
     ++explored_node_num;
-    UpdateSuccs(*node);
+    UpdateSuccs(node);
 
     if (explored_node_num % 100000 == 0 && explored_node_num > 0) {
       LOG(INFO) << "expands so far=" << explored_node_num;
@@ -255,10 +255,11 @@ bool LatticeAStar::IsWithinMap(const int grid_x, const int grid_y) const {
          grid_y < env_cfg_.max_grid_y;
 }
 
-bool LatticeAStar::ValidityCheck(const Node3d& node) const {
-  int grid_x = node.grid_x();
-  int grid_y = node.grid_y();
-  int grid_phi = node.grid_phi();
+bool LatticeAStar::ValidityCheck(const Node3d* node) const {
+  CHECK_NOTNULL(node);
+  int grid_x = node->grid_x();
+  int grid_y = node->grid_y();
+  int grid_phi = node->grid_phi();
   if (!IsValidCell(grid_x, grid_y)) {
     return false;
   }
@@ -284,10 +285,11 @@ bool LatticeAStar::ValidityCheck(const Node3d& node) const {
   return true;
 }
 
-void LatticeAStar::UpdateSuccs(const Node3d& curr_node) {
-  const int curr_x = curr_node.grid_x();
-  const int curr_y = curr_node.grid_y();
-  const int curr_phi = curr_node.grid_phi();
+void LatticeAStar::UpdateSuccs(const Node3d* curr_node) {
+  CHECK_NOTNULL(curr_node);
+  const int curr_x = curr_node->grid_x();
+  const int curr_y = curr_node->grid_y();
+  const int curr_phi = curr_node->grid_phi();
   const std::vector<primitive_generator::Primitive>& actions =
       motion_primitive_generator_->motion_primitives()[curr_phi];
 
@@ -312,9 +314,9 @@ void LatticeAStar::UpdateSuccs(const Node3d& curr_node) {
     Node3d* succ_node = GetNode(succ_x, succ_y, succ_phi);
     // see if we can decrease the value of successive node taking into account
     // the cost of action
-    if (succ_node->g() > curr_node.g() + action_cost) {
-      succ_node->set_g(curr_node.g() + action_cost);
-      succ_node->set_pre_node(&curr_node);
+    if (succ_node->g() > curr_node->g() + action_cost) {
+      succ_node->set_g(curr_node->g() + action_cost);
+      succ_node->set_pre_node(curr_node);
       succ_node->set_action_idx({curr_phi, action.id});
 
       // re-insert into heap if not closed yet

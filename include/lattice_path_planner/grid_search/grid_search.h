@@ -87,13 +87,14 @@ class GridSearch {
  private:
   bool SetStart(int start_x, int start_y);
   bool SetEnd(int end_x, int end_y);
+  bool SetStartAndEndConfiguration(int sx, int sy, int ex, int ey);
   Node2d* GetNode(int grid_x, int grid_y);
   int CalcHeuCost(int grid_x, int grid_y) const;
   bool IsWithinMap(int grid_x, int grid_y) const;
   bool IsValidCell(int grid_x, int grid_y) const;
   int CalcGridXYIndex(int grid_x, int grid_y) const;
-  int GetKey(Node2d* node) const;
-  void UpdateSuccs(const Node2d& curr_node);
+  int GetKey(const Node2d* node) const;
+  void UpdateSuccs(const Node2d* curr_node);
   void ComputeGridSearchActions();
   int GetActionCost(int curr_x, int curr_y, int action_id) const;
   void LoadGridAStarResult(GridAStarResult* result) const;
