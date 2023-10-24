@@ -33,6 +33,8 @@
 
 #include "lattice_path_planner/lattice_path_planner_ros.h"
 
+#include <utility>
+
 #include "costmap_2d/inflation_layer.h"
 #include "nav_msgs/Path.h"
 #include "pluginlib/class_list_macros.hpp"
@@ -167,13 +169,11 @@ uint8_t LatticePathPlannerROS::ComputeCircumscribedCost() const {
   for (auto& plugin : *plugins) {
     auto inflation_layer =
         boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(plugin);
-    if (inflation_layer == nullptr) {
-      continue;
+    if (inflation_layer != nullptr) {
+      return inflation_layer->computeCost(
+          layered_costmap_->getCircumscribedRadius() /
+          costmap_2d_->getResolution());
     }
-
-    return inflation_layer->computeCost(
-        layered_costmap_->getCircumscribedRadius() /
-        costmap_2d_->getResolution());
   }
   return 0U;
 }
