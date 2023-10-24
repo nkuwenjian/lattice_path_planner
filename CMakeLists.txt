@@ -9,6 +9,12 @@ add_compile_options(-std=c++14)
 # Compile ROS package
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall")
 
+# set(CMAKE_CXX_CLANG_TIDY
+#   clang-tidy;
+#   -header-filter=${PROJECT_SOURCE_DIR}/include/lattice_path_planner;
+#   -warnings-as-errors=*;
+# )
+
 find_package(catkin REQUIRED COMPONENTS
   costmap_2d
   geometry_msgs

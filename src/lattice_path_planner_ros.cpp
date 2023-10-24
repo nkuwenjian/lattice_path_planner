@@ -46,11 +46,6 @@ PLUGINLIB_EXPORT_CLASS(lattice_path_planner::LatticePathPlannerROS,
 
 namespace lattice_path_planner {
 
-LatticePathPlannerROS::LatticePathPlannerROS(
-    std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
-  initialize(name, costmap_ros);
-}
-
 void LatticePathPlannerROS::initialize(std::string name,
                                        costmap_2d::Costmap2DROS* costmap_ros) {
   // Check if LatticePathPlannerROS has been initialized.
@@ -98,7 +93,8 @@ void LatticePathPlannerROS::initialize(std::string name,
   // Create and initialize LatticePathPlannerROS.
   planner_ = std::make_unique<lattice_a_star::LatticeAStar>();
   planner_->Init(
-      costmap_2d_->getSizeInCellsX(), costmap_2d_->getSizeInCellsY(),
+      static_cast<int>(costmap_2d_->getSizeInCellsX()),
+      static_cast<int>(costmap_2d_->getSizeInCellsY()),
       costmap_2d::LETHAL_OBSTACLE, costmap_2d::INSCRIBED_INFLATED_OBSTACLE,
       cost_possibly_circumscribed_thresh, costmap_2d_->getResolution(),
       nominalvel_mpersecs, timetoturn45degsinplace_secs, footprint,
@@ -168,9 +164,9 @@ uint8_t LatticePathPlannerROS::ComputeCircumscribedCost() const {
   }
 
   // Check if the costmap has an inflation layer.
-  for (auto layer = plugins->begin(); layer != plugins->end(); ++layer) {
+  for (auto& plugin : *plugins) {
     auto inflation_layer =
-        boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
+        boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(plugin);
     if (inflation_layer == nullptr) {
       continue;
     }

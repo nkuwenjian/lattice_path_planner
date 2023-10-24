@@ -54,14 +54,6 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
   LatticePathPlannerROS() = default;
 
   /**
-   * @brief  Constructor for the LatticePathPlannerROS object
-   * @param  name The name of this planner
-   * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
-   */
-  LatticePathPlannerROS(std::string name,
-                        costmap_2d::Costmap2DROS* costmap_ros);
-
-  /**
    * @brief  Initialization function for the LatticePathPlannerROS object
    * @param  name The name of this planner
    * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
@@ -80,7 +72,7 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
                 const geometry_msgs::PoseStamped& goal,
                 std::vector<geometry_msgs::PoseStamped>& plan) override;
 
-  virtual ~LatticePathPlannerROS() = default;
+  ~LatticePathPlannerROS() override = default;
 
  private:
   bool UpdateCostmap(costmap_2d::Costmap2DROS* costmap_ros);
