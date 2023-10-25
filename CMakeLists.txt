@@ -30,7 +30,7 @@ find_package(glog REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS ${PROJECT_SOURCE_DIR}
-  LIBRARIES ${PROJECT_NAME}
+  LIBRARIES lattice_path_planner
   CATKIN_DEPENDS
     costmap_2d
     geometry_msgs
@@ -47,7 +47,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME}
+add_library(lattice_path_planner
   lattice_path_planner/common/breadth_first_search.cc
   lattice_path_planner/common/footprint_helper.cc
   lattice_path_planner/common/heap.cc
@@ -58,4 +58,7 @@ add_library(${PROJECT_NAME}
   lattice_path_planner/cubic_spline_interpolation.cc
   lattice_path_planner/lattice_path_planner_ros.cc
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} glog::glog)
+target_link_libraries(lattice_path_planner ${catkin_LIBRARIES} glog::glog)
+
+add_executable(lattice_path_planner_test lattice_path_planner/lattice_path_planner_ros_test.cc)
+target_link_libraries(lattice_path_planner_test lattice_path_planner ${catkin_LIBRARIES})
