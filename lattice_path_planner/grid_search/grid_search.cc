@@ -38,11 +38,20 @@
 namespace lattice_path_planner {
 namespace grid_search {
 
-GridSearch::GridSearch(int max_grid_x, int max_grid_y,
-                       double xy_grid_resolution)
-    : max_grid_x_(max_grid_x),
-      max_grid_y_(max_grid_y),
-      xy_grid_resolution_(xy_grid_resolution) {
+void GridSearch::Init(int max_grid_x, int max_grid_y, double xy_grid_resolution,
+                      uint8_t obsthresh,
+                      TerminationCondition termination_condition) {
+  if (initialized_) {
+    LOG(INFO) << "GridSearch has been initialized.";
+    return;
+  }
+
+  max_grid_x_ = max_grid_x;
+  max_grid_y_ = max_grid_y;
+  xy_grid_resolution_ = xy_grid_resolution;
+  obsthresh_ = obsthresh;
+  termination_condition_ = termination_condition;
+
   open_list_ = std::make_unique<common::Heap>();
 
   dp_lookup_table_.resize(max_grid_x_);
@@ -53,6 +62,8 @@ GridSearch::GridSearch(int max_grid_x, int max_grid_y,
   }
 
   ComputeGridSearchActions();
+  initialized_ = true;
+  LOG(INFO) << "GridSearch is initialized successfully.";
 }
 
 GridSearch::~GridSearch() { open_list_->Clear(); }
@@ -71,15 +82,18 @@ void GridSearch::Clear() {
 
 bool GridSearch::GenerateGridPath(
     int sx, int sy, int ex, int ey,
-    const std::vector<std::vector<uint8_t>>& grid_map, uint8_t obsthresh,
-    TerminationCondition termination_condition, GridAStarResult* result) {
+    const std::vector<std::vector<uint8_t>>& grid_map,
+    GridAStarResult* result) {
+  if (!initialized_) {
+    LOG(ERROR) << "GridSearch has not been initialized.";
+    return false;
+  }
+
   const auto start_timestamp = std::chrono::system_clock::now();
 
   // clean up previous planning result
   Clear();
-  obsthresh_ = obsthresh;
   grid_map_ = grid_map;
-  termination_condition_ = termination_condition;
   iterations_++;
 
   // check the validity of start/goal
@@ -92,7 +106,7 @@ bool GridSearch::GenerateGridPath(
   start_node_->set_h(CalcHeuCost(sx, sy));
   open_list_->Insert(start_node_, GetKey(start_node_));
 
-  float term_factor = GetTerminationFactor(termination_condition);
+  float term_factor = GetTerminationFactor(termination_condition_);
 
   // grid search begins
   std::size_t explored_node_num = 0U;
@@ -123,7 +137,7 @@ bool GridSearch::GenerateGridPath(
     LOG(ERROR) << "Grid searching return infinite cost (open_list ran out)";
     return false;
   }
-  if (termination_condition ==
+  if (termination_condition_ ==
       TerminationCondition::TERM_CONDITION_OPTPATHFOUND) {
     LoadGridAStarResult(result);
   }
@@ -415,6 +429,11 @@ void GridSearch::LoadGridAStarResult(GridAStarResult* result) const {
 }
 
 int GridSearch::CheckDpMap(const int grid_x, const int grid_y) {
+  if (!initialized_) {
+    LOG(ERROR) << "GridSearch has not been initialized.";
+    return common::kInfiniteCost;
+  }
+
   const Node2d* node = GetNode(grid_x, grid_y);
   CHECK_NOTNULL(node);
   CHECK_EQ(node->iterations(), iterations_);

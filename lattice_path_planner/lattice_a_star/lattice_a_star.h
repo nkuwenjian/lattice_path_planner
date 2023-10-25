@@ -60,11 +60,10 @@ class LatticeAStar {
  public:
   LatticeAStar() = default;
   virtual ~LatticeAStar();
-
-  void Init(int max_grid_x, int max_grid_y, uint8_t obsthresh,
-            uint8_t cost_inscribed_thresh,
-            int cost_possibly_circumscribed_thresh, double xy_grid_resolution,
-            double nominalvel_mpersecs, double timetoturn45degsinplace_secs,
+  void Init(int max_grid_x, int max_grid_y, double xy_grid_resolution,
+            uint8_t obsthresh, uint8_t cost_inscribed_thresh,
+            int cost_possibly_circumscribed_thresh, double nominalvel_mpersecs,
+            double timetoturn45degsinplace_secs,
             const std::vector<common::XYPoint>& footprint,
             char* motPrimFilename);
   bool Plan(double start_x, double start_y, double start_phi, double end_x,
@@ -77,15 +76,11 @@ class LatticeAStar {
   bool SetEnd(double end_x, double end_y, double end_phi);
   void LoadLatticeAStarResult(LatticeAStarResult* result);
   void Clear();
-
   int CalcGridXYIndex(int grid_x, int grid_y) const;
   int CalcHeuCost(int grid_x, int grid_y) const;
   double EuclidHeuCost(int x1, int y1, int x2, int y2) const;
-
-  // check collision and validity
   bool ValidityCheck(const Node3d* node) const;
   bool IsValidCell(int grid_x, int grid_y) const;
-
   bool WorldToGrid(double x, double y, double phi, int* grid_x, int* grid_y,
                    int* grid_phi) const;
   bool GridToWorld(int grid_x, int grid_y, int grid_phi, double* x, double* y,
@@ -109,6 +104,7 @@ class LatticeAStar {
   Node3d* end_node_ = nullptr;
   std::size_t iterations_ = 0U;
   std::size_t created_node_num_ = 0U;
+  bool initialized_ = false;
 };
 
 }  // namespace lattice_a_star

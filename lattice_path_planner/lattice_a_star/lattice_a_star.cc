@@ -43,20 +43,26 @@ namespace lattice_a_star {
 
 LatticeAStar::~LatticeAStar() { open_list_->Clear(); }
 
-void LatticeAStar::Init(int max_grid_x, int max_grid_y, uint8_t obsthresh,
+void LatticeAStar::Init(int max_grid_x, int max_grid_y,
+                        double xy_grid_resolution, uint8_t obsthresh,
                         uint8_t cost_inscribed_thresh,
                         int cost_possibly_circumscribed_thresh,
-                        double xy_grid_resolution, double nominalvel_mpersecs,
+                        double nominalvel_mpersecs,
                         double timetoturn45degsinplace_secs,
                         const std::vector<common::XYPoint>& footprint,
                         char* motPrimFilename) {
+  if (initialized_) {
+    LOG(INFO) << "LatticeAStar has been initialized.";
+    return;
+  }
+
   env_cfg_.max_grid_x = max_grid_x;
   env_cfg_.max_grid_y = max_grid_y;
+  env_cfg_.xy_grid_resolution = xy_grid_resolution;
   env_cfg_.obsthresh = obsthresh;
   env_cfg_.cost_inscribed_thresh = cost_inscribed_thresh;
   env_cfg_.cost_possibly_circumscribed_thresh =
       cost_possibly_circumscribed_thresh;
-  env_cfg_.xy_grid_resolution = xy_grid_resolution;
   env_cfg_.nominalvel_mpersecs = nominalvel_mpersecs;
   env_cfg_.timetoturn45degsinplace_secs = timetoturn45degsinplace_secs;
   env_cfg_.footprint = footprint;
@@ -65,14 +71,20 @@ void LatticeAStar::Init(int max_grid_x, int max_grid_y, uint8_t obsthresh,
       std::make_unique<primitive_generator::PrimitiveGenerator>(env_cfg_);
   motion_primitive_generator_->Init(motPrimFilename);
 
-  grid_a_star_heuristic_generator_ = std::make_unique<grid_search::GridSearch>(
-      env_cfg_.max_grid_x, env_cfg_.max_grid_y, env_cfg_.xy_grid_resolution);
+  grid_a_star_heuristic_generator_ =
+      std::make_unique<grid_search::GridSearch>();
+  grid_a_star_heuristic_generator_->Init(
+      env_cfg_.max_grid_x, env_cfg_.max_grid_y, env_cfg_.xy_grid_resolution,
+      env_cfg_.cost_inscribed_thresh,
+      grid_search::TerminationCondition::TERM_CONDITION_TWOTIMESOPTPATH);
   open_list_ = std::make_unique<common::Heap>();
 
   lattice_lookup_table_.resize(env_cfg_.phi_grid_resolution);
   for (int i = 0; i < env_cfg_.phi_grid_resolution; ++i) {
     lattice_lookup_table_[i].resize(env_cfg_.max_grid_x * env_cfg_.max_grid_y);
   }
+  initialized_ = true;
+  LOG(INFO) << "LatticeAStar is initialized successfully.";
 }
 
 bool LatticeAStar::SetStart(double start_x, double start_y, double start_phi) {
@@ -128,6 +140,11 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
                         double end_x, double end_y, double end_phi,
                         std::vector<std::vector<uint8_t>>&& grid_map,
                         LatticeAStarResult* result) {
+  if (!initialized_) {
+    LOG(ERROR) << "LatticeAStar has not been initialized.";
+    return false;
+  }
+
   const auto start_timestamp = std::chrono::system_clock::now();
 
   // clean up previous planning result
@@ -152,9 +169,7 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
   // update heuristic function
   grid_a_star_heuristic_generator_->GenerateGridPath(
       end_node_->grid_x(), end_node_->grid_y(), start_node_->grid_x(),
-      start_node_->grid_y(), env_cfg_.grid_map, env_cfg_.cost_inscribed_thresh,
-      grid_search::TerminationCondition::TERM_CONDITION_TWOTIMESOPTPATH,
-      nullptr);
+      start_node_->grid_y(), env_cfg_.grid_map, nullptr);
 
   // initialize start node and insert it into heap
   start_node_->set_g(0);

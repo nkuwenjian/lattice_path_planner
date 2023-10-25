@@ -75,12 +75,12 @@ struct GridSearchPrimitives {
 
 class GridSearch {
  public:
-  GridSearch(int max_grid_x, int max_grid_y, double xy_grid_resolution);
+  GridSearch() = default;
   virtual ~GridSearch();
+  void Init(int max_grid_x, int max_grid_y, double xy_grid_resolution,
+            uint8_t obsthresh, TerminationCondition termination_condition);
   bool GenerateGridPath(int sx, int sy, int ex, int ey,
                         const std::vector<std::vector<uint8_t>>& grid_map,
-                        uint8_t obsthresh,
-                        TerminationCondition termination_condition,
                         GridAStarResult* result);
   int CheckDpMap(int grid_x, int grid_y);
 
@@ -116,6 +116,7 @@ class GridSearch {
   std::size_t iterations_ = 0U;
 
   GridSearchPrimitives actions_;
+  bool initialized_ = false;
 };
 
 }  // namespace grid_search

@@ -67,9 +67,6 @@ class Heap {
   int size_ = 0;
   int capacity_ = kInitHeapCapacity;
   std::vector<HeapElement> queue_;
-
-  // for TEST only
-  friend class HeapTest;
 };
 
 }  // namespace common
