@@ -77,8 +77,9 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
  private:
   bool UpdateCostmap(costmap_2d::Costmap2DROS* costmap_ros);
 
-  bool GetRosParameters(const ros::NodeHandle& nh, double* nominalvel_mpersecs,
-                        double* timetoturn45degsinplace_secs);
+  bool LoadRosParamFromNodeHandle(const ros::NodeHandle& nh,
+                                  double* nominalvel_mpersecs,
+                                  double* timetoturn45degsinplace_secs);
 
   uint8_t ComputeCircumscribedCost() const;
 

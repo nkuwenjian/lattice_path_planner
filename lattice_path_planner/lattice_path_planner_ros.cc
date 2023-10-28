@@ -68,8 +68,8 @@ void LatticePathPlannerROS::initialize(std::string name,
   name_ = name;
   double nominalvel_mpersecs = 0.0;
   double timetoturn45degsinplace_secs = 0.0;
-  if (!GetRosParameters(private_nh, &nominalvel_mpersecs,
-                        &timetoturn45degsinplace_secs)) {
+  if (!LoadRosParamFromNodeHandle(private_nh, &nominalvel_mpersecs,
+                                  &timetoturn45degsinplace_secs)) {
     LOG(ERROR) << "Failed to get ROS parameters.";
     return;
   }
@@ -125,7 +125,7 @@ bool LatticePathPlannerROS::UpdateCostmap(
   return true;
 }
 
-bool LatticePathPlannerROS::GetRosParameters(
+bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
     const ros::NodeHandle& nh, double* nominalvel_mpersecs,
     double* timetoturn45degsinplace_secs) {
   // Sanity checks.
