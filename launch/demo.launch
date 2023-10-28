@@ -18,6 +18,9 @@
     <param name="LatticePathPlannerROS/primitive_filename" value="$(find lattice_path_planner)/params/pr2_5cm.mprim" />
   </node>
 
+  <!-- tf -->
+  <node pkg="lattice_path_planner" type="lattice_path_planner_tf_broadcaster" name="lattice_path_planner_tf_broadcaster" output="screen"/>
+
   <!-- Mapping -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
     <param name="frame_id" value="$(arg global_frame)" />

@@ -62,3 +62,6 @@ target_link_libraries(lattice_path_planner ${catkin_LIBRARIES} glog::glog)
 
 add_executable(lattice_path_planner_test lattice_path_planner/lattice_path_planner_ros_test.cc)
 target_link_libraries(lattice_path_planner_test lattice_path_planner ${catkin_LIBRARIES})
+
+add_executable(lattice_path_planner_tf_broadcaster lattice_path_planner/tf_broadcaster.cc)
+target_link_libraries(lattice_path_planner_tf_broadcaster ${catkin_LIBRARIES} glog::glog)
