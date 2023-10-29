@@ -66,7 +66,11 @@ class TfBroadcaster {
   std::unique_ptr<std::thread> transform_thread_ = nullptr;
 };
 
-TfBroadcaster::~TfBroadcaster() { transform_thread_->join(); }
+TfBroadcaster::~TfBroadcaster() {
+  if (transform_thread_ != nullptr) {
+    transform_thread_->join();
+  }
+}
 
 void TfBroadcaster::Initialize() {
   start_sub_ = nh_.subscribe("initialpose", 1, &TfBroadcaster::SetStart, this);
