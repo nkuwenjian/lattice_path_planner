@@ -31,14 +31,14 @@
  * Author: Jian Wen (nkuwenjian@gmail.com)
  *****************************************************************************/
 
-#include "lattice_path_planner/cubic_spline_interpolation.h"
+#include "lattice_path_planner/cubic_spline_interpolator.h"
 
 #include "glog/logging.h"
 #include "spline/spline.h"
 
 namespace lattice_path_planner {
 
-std::vector<common::XYThetaPoint> CubicSplineInterpolation::Interpolate(
+std::vector<common::XYThetaPoint> CubicSplineInterpolator::Interpolate(
     const std::vector<common::XYThetaPoint>& path, std::size_t num_points) {
   // Sanity checks.
   if (path.size() < 3U) {
@@ -97,10 +97,10 @@ std::vector<common::XYThetaPoint> CubicSplineInterpolation::Interpolate(
   return spline;
 }
 
-void CubicSplineInterpolation::CreateTimeGrid(std::vector<double>* T,
-                                              double* tmin, double* tmax,
-                                              const std::vector<double>& X,
-                                              const std::vector<double>& Y) {
+void CubicSplineInterpolator::CreateTimeGrid(std::vector<double>* T,
+                                             double* tmin, double* tmax,
+                                             const std::vector<double>& X,
+                                             const std::vector<double>& Y) {
   // Sanity checks.
   CHECK_NOTNULL(T);
   CHECK_NOTNULL(tmin);

@@ -41,7 +41,7 @@
 #include "tf/tf.h"
 #include "tf2/LinearMath/Quaternion.h"
 
-#include "lattice_path_planner/cubic_spline_interpolation.h"
+#include "lattice_path_planner/cubic_spline_interpolator.h"
 
 PLUGINLIB_EXPORT_CLASS(lattice_path_planner::LatticePathPlannerROS,
                        nav_core::BaseGlobalPlanner)
@@ -270,8 +270,8 @@ LatticePathPlannerROS::InterpolateLatticeAStarPath(
     return raw_path;
   }
 
-  // Smooth the raw path via cubic spline interpolation.
-  return CubicSplineInterpolation::Interpolate(raw_path);
+  // Smooth the raw path via cubic spline interpolator.
+  return CubicSplineInterpolator::Interpolate(raw_path);
 }
 
 bool LatticePathPlannerROS::makePlan(

@@ -39,9 +39,9 @@
 
 namespace lattice_path_planner {
 
-class CubicSplineInterpolation {
+class CubicSplineInterpolator {
  public:
-  CubicSplineInterpolation() = delete;
+  CubicSplineInterpolator() = delete;
 
   static std::vector<common::XYThetaPoint> Interpolate(
       const std::vector<common::XYThetaPoint>& path,
