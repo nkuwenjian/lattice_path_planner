@@ -68,9 +68,12 @@ void LatticePathPlannerROS::initialize(std::string name,
   name_ = name;
   double nominalvel_mpersecs = 0.0;
   double timetoturn45degsinplace_secs = 0.0;
+  double vehicle_length = 0.0;
+  double vehicle_width = 0.0;
   if (!LoadRosParamFromNodeHandle(private_nh, &nominalvel_mpersecs,
-                                  &timetoturn45degsinplace_secs)) {
-    LOG(ERROR) << "Failed to get ROS parameters.";
+                                  &timetoturn45degsinplace_secs,
+                                  &vehicle_length, &vehicle_width)) {
+    LOG(ERROR) << "Failed to load ROS parameters.";
     return;
   }
 
@@ -102,7 +105,8 @@ void LatticePathPlannerROS::initialize(std::string name,
                  timetoturn45degsinplace_secs, footprint,
                  const_cast<char*>(primitive_filename_.c_str()));
 
-  global_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+  visualizer_ = std::make_unique<PathVisualizer>();
+  visualizer_->Initialize(name, vehicle_length, vehicle_width);
 
   initialized_ = true;
   LOG(INFO) << "LatticePathPlannerROS is initialized successfully.";
@@ -127,7 +131,8 @@ bool LatticePathPlannerROS::UpdateCostmap(
 
 bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
     const ros::NodeHandle& nh, double* nominalvel_mpersecs,
-    double* timetoturn45degsinplace_secs) {
+    double* timetoturn45degsinplace_secs, double* vehicle_length,
+    double* vehicle_width) {
   // Sanity checks.
   CHECK_NOTNULL(nominalvel_mpersecs);
   CHECK_NOTNULL(timetoturn45degsinplace_secs);
@@ -138,6 +143,14 @@ bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
   nh.param("min_sample_interval", min_sample_interval_,
            costmap_2d_->getResolution());
   nh.param("treat_unknown_as_free", treat_unknown_as_free_, true);
+  if (!nh.getParam("vehicle_length", *vehicle_length)) {
+    LOG(ERROR) << "Failed to set vehicle_length";
+    return false;
+  }
+  if (!nh.getParam("vehicle_width", *vehicle_width)) {
+    LOG(ERROR) << "Failed to set vehicle_width";
+    return false;
+  }
   if (!nh.getParam("primitive_filename", primitive_filename_)) {
     LOG(ERROR) << "Failed to set primitive_filename";
     return false;
@@ -149,6 +162,8 @@ bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
   VLOG(4) << std::fixed << "min_sample_interval: " << min_sample_interval_;
   VLOG(4) << std::boolalpha
           << "treat_unknown_as_free: " << treat_unknown_as_free_;
+  VLOG(4) << std::fixed << "vehicle_length: " << *vehicle_length;
+  VLOG(4) << std::fixed << "vehicle_width: " << *vehicle_width;
   VLOG(4) << "primitive_filename: " << primitive_filename_;
   return true;
 }
@@ -320,8 +335,7 @@ bool LatticePathPlannerROS::makePlan(
   PopulateGlobalPlan(interpolated_path, start.header, costmap_2d_->getOriginX(),
                      costmap_2d_->getOriginY(), &plan);
 
-  // Publish global plan.
-  PublishPlan(plan, global_plan_pub_);
+  visualizer_->Visualize(plan);
 
   return true;
 }
@@ -344,19 +358,6 @@ void LatticePathPlannerROS::PopulateGlobalPlan(
         tf::createQuaternionMsgFromYaw(pose.theta());
     plan->push_back(pose_stamped);
   }
-}
-
-void LatticePathPlannerROS::PublishPlan(
-    const std::vector<geometry_msgs::PoseStamped>& plan,
-    const ros::Publisher& pub) {
-  if (plan.empty()) {
-    return;
-  }
-
-  nav_msgs::Path gui_path;
-  gui_path.header = plan.front().header;
-  gui_path.poses = plan;
-  pub.publish(gui_path);
 }
 
 }  // namespace lattice_path_planner

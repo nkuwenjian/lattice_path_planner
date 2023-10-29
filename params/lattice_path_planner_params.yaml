@@ -3,3 +3,6 @@ LatticePathPlannerROS:
   timetoturn45degsinplace_secs: 0.6
   min_sample_interval: 0.1
   treat_unknown_as_free: true
+
+  vehicle_length: 0.23
+  vehicle_width: 0.2

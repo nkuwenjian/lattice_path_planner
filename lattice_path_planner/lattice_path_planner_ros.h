@@ -43,6 +43,7 @@
 #include "ros/ros.h"
 
 #include "lattice_path_planner/lattice_a_star/lattice_a_star.h"
+#include "lattice_path_planner/path_visualizer.h"
 
 namespace lattice_path_planner {
 
@@ -79,7 +80,9 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
 
   bool LoadRosParamFromNodeHandle(const ros::NodeHandle& nh,
                                   double* nominalvel_mpersecs,
-                                  double* timetoturn45degsinplace_secs);
+                                  double* timetoturn45degsinplace_secs,
+                                  double* vehicle_length,
+                                  double* vehicle_width);
 
   uint8_t ComputeCircumscribedCost() const;
 
@@ -105,10 +108,8 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
       const std_msgs::Header& header, double origin_x, double origin_y,
       std::vector<geometry_msgs::PoseStamped>* plan);
 
-  static void PublishPlan(const std::vector<geometry_msgs::PoseStamped>& plan,
-                          const ros::Publisher& pub);
-
   std::unique_ptr<lattice_a_star::LatticeAStar> planner_ = nullptr;
+  std::unique_ptr<PathVisualizer> visualizer_ = nullptr;
   bool initialized_ = false;
   double min_sample_interval_ = 0.0;
   std::string primitive_filename_;
@@ -118,7 +119,6 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
   const costmap_2d::Costmap2DROS* costmap_ros_ = nullptr;
   const costmap_2d::Costmap2D* costmap_2d_ = nullptr;
   costmap_2d::LayeredCostmap* layered_costmap_ = nullptr;
-  ros::Publisher global_plan_pub_;
 };
 
 }  // namespace lattice_path_planner

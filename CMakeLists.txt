@@ -57,6 +57,7 @@ add_library(lattice_path_planner
   lattice_path_planner/primitive_generator/primitive_generator.cc
   lattice_path_planner/cubic_spline_interpolator.cc
   lattice_path_planner/lattice_path_planner_ros.cc
+  lattice_path_planner/path_visualizer.cc
 )
 target_link_libraries(lattice_path_planner ${catkin_LIBRARIES} glog::glog)
 
