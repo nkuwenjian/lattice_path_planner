@@ -5,7 +5,7 @@
 
   <arg name="global_frame" value="map" />
 
-  <arg name="map_file" default="$(find lattice_path_planner)/map/map.yaml" />
+  <arg name="map_file" default="$(find lattice_path_planner)/map/maze_5cm/map.yaml" />
 
   <node pkg="lattice_path_planner" type="lattice_path_planner_test" name="lattice_path_planner_test" output="screen">
     <!-- global_costmap -->
