@@ -41,8 +41,6 @@
 #include "tf/tf.h"
 #include "tf2/LinearMath/Quaternion.h"
 
-#include "lattice_path_planner/cubic_spline_interpolator.h"
-
 PLUGINLIB_EXPORT_CLASS(lattice_path_planner::LatticePathPlannerROS,
                        nav_core::BaseGlobalPlanner)
 
@@ -140,8 +138,6 @@ bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
 
   nh.param("nominalvel_mpersecs", *nominalvel_mpersecs, 0.4);
   nh.param("timetoturn45degsinplace_secs", *timetoturn45degsinplace_secs, 0.6);
-  nh.param("min_sample_interval", min_sample_interval_,
-           costmap_2d_->getResolution());
   nh.param("treat_unknown_as_free", treat_unknown_as_free_, true);
   if (!nh.getParam("vehicle_length", *vehicle_length)) {
     LOG(ERROR) << "Failed to set vehicle_length";
@@ -159,7 +155,6 @@ bool LatticePathPlannerROS::LoadRosParamFromNodeHandle(
   VLOG(4) << std::fixed << "nominalvel_mpersecs: " << *nominalvel_mpersecs;
   VLOG(4) << std::fixed
           << "timetoturn45degsinplace_secs: " << *timetoturn45degsinplace_secs;
-  VLOG(4) << std::fixed << "min_sample_interval: " << min_sample_interval_;
   VLOG(4) << std::boolalpha
           << "treat_unknown_as_free: " << treat_unknown_as_free_;
   VLOG(4) << std::fixed << "vehicle_length: " << *vehicle_length;
@@ -254,41 +249,6 @@ std::vector<std::vector<uint8_t>> LatticePathPlannerROS::GetGridMap(
   return grid_map;
 }
 
-std::vector<common::XYThetaPoint>
-LatticePathPlannerROS::InterpolateLatticeAStarPath(
-    const lattice_a_star::LatticeAStarResult& result,
-    double min_sample_interval) {
-  // Sanity checks.
-  CHECK_EQ(result.x.size(), result.y.size());
-  CHECK_EQ(result.x.size(), result.phi.size());
-  const std::size_t N = result.x.size();
-
-  // Sample raw path along lattice path.
-  std::vector<common::XYThetaPoint> raw_path;
-  raw_path.emplace_back(result.x.front(), result.y.front(), result.phi.front());
-  double last_x = result.x.front();
-  double last_y = result.y.front();
-
-  for (std::size_t i = 1U; i < N; ++i) {
-    double dx = result.x[i] - last_x;
-    double dy = result.y[i] - last_y;
-    if (std::hypot(dx, dy) > min_sample_interval) {
-      raw_path.emplace_back(result.x[i], result.y[i], result.phi[i]);
-      last_x = result.x[i];
-      last_y = result.y[i];
-    }
-  }
-  raw_path.pop_back();
-  raw_path.emplace_back(result.x.back(), result.y.back(), result.phi.back());
-
-  if (raw_path.size() < 3U) {
-    return raw_path;
-  }
-
-  // Smooth the raw path via cubic spline interpolator.
-  return CubicSplineInterpolator::Interpolate(raw_path);
-}
-
 bool LatticePathPlannerROS::makePlan(
     const geometry_msgs::PoseStamped& start,
     const geometry_msgs::PoseStamped& goal,
@@ -327,12 +287,8 @@ bool LatticePathPlannerROS::makePlan(
     return false;
   }
 
-  // Interpolate raw lattice A star result to get dense path points.
-  std::vector<common::XYThetaPoint> interpolated_path =
-      InterpolateLatticeAStarPath(result, min_sample_interval_);
-
   // Populate global plan.
-  PopulateGlobalPlan(interpolated_path, start.header, costmap_2d_->getOriginX(),
+  PopulateGlobalPlan(result, start.header, costmap_2d_->getOriginX(),
                      costmap_2d_->getOriginY(), &plan);
 
   visualizer_->Visualize(plan);
@@ -341,21 +297,24 @@ bool LatticePathPlannerROS::makePlan(
 }
 
 void LatticePathPlannerROS::PopulateGlobalPlan(
-    const std::vector<common::XYThetaPoint>& interpolated_path,
+    const lattice_a_star::LatticeAStarResult& searched_path,
     const std_msgs::Header& header, double origin_x, double origin_y,
     std::vector<geometry_msgs::PoseStamped>* plan) {
   // Sanity checks.
   CHECK_NOTNULL(plan);
+  CHECK_EQ(searched_path.x.size(), searched_path.y.size());
+  CHECK_EQ(searched_path.x.size(), searched_path.phi.size());
+  const std::size_t N = searched_path.x.size();
 
   plan->clear();
   geometry_msgs::PoseStamped pose_stamped;
   pose_stamped.header = header;
 
-  for (const common::XYThetaPoint& pose : interpolated_path) {
-    pose_stamped.pose.position.x = pose.x() + origin_x;
-    pose_stamped.pose.position.y = pose.y() + origin_y;
+  for (std::size_t i = 0U; i < N; ++i) {
+    pose_stamped.pose.position.x = searched_path.x[i] + origin_x;
+    pose_stamped.pose.position.y = searched_path.y[i] + origin_y;
     pose_stamped.pose.orientation =
-        tf::createQuaternionMsgFromYaw(pose.theta());
+        tf::createQuaternionMsgFromYaw(searched_path.phi[i]);
     plan->push_back(pose_stamped);
   }
 }

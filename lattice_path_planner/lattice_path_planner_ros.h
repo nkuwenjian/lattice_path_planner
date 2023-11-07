@@ -99,19 +99,14 @@ class LatticePathPlannerROS : public nav_core::BaseGlobalPlanner {
       const uint8_t* char_map, unsigned int size_x, unsigned int size_y,
       bool treat_unknown_as_free);
 
-  static std::vector<common::XYThetaPoint> InterpolateLatticeAStarPath(
-      const lattice_a_star::LatticeAStarResult& result,
-      double min_sample_interval);
-
   static void PopulateGlobalPlan(
-      const std::vector<common::XYThetaPoint>& interpolated_path,
+      const lattice_a_star::LatticeAStarResult& searched_path,
       const std_msgs::Header& header, double origin_x, double origin_y,
       std::vector<geometry_msgs::PoseStamped>* plan);
 
   std::unique_ptr<lattice_a_star::LatticeAStar> planner_ = nullptr;
   std::unique_ptr<PathVisualizer> visualizer_ = nullptr;
   bool initialized_ = false;
-  double min_sample_interval_ = 0.0;
   std::string primitive_filename_;
   bool treat_unknown_as_free_ = false;
 
