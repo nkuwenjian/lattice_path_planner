@@ -93,7 +93,7 @@ class LatticeAStar {
 
   std::unique_ptr<common::Heap> open_list_ = nullptr;
   std::vector<std::vector<Node3dPtr>> lattice_lookup_table_;
-  std::vector<std::vector<common::NodeStatus>> closed_list_;
+  std::vector<std::vector<common::Node::NodeStatus>> closed_list_;
   std::unique_ptr<grid_search::GridSearch> grid_a_star_heuristic_generator_ =
       nullptr;
   std::unique_ptr<primitive_generator::PrimitiveGenerator>

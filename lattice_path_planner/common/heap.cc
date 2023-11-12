@@ -40,24 +40,24 @@ namespace common {
 
 Heap::Heap() { queue_.resize(capacity_); }
 
-Heap::Heap(const int capacity) : capacity_(capacity) {
+Heap::Heap(const std::size_t capacity) : capacity_(capacity) {
   queue_.resize(capacity);
 }
 
 Heap::~Heap() { Clear(); }
 
 void Heap::Clear() {
-  for (int i = 1; i <= size_; ++i) {
+  for (std::size_t i = 1; i <= size_; ++i) {
     queue_[i].node->set_heap_index(0);
   }
   size_ = 0;
 }
 
-void Heap::PercolateDown(int hole, HeapElement obj) {
+void Heap::PercolateDown(std::size_t hole, HeapElement obj) {
   // Sanity checks.
   CHECK(!Empty());
 
-  int child;
+  std::size_t child;
   for (; 2 * hole <= size_; hole = child) {
     child = 2 * hole;
     if (child != size_ && queue_[child + 1].key < queue_[child].key) {
@@ -74,7 +74,7 @@ void Heap::PercolateDown(int hole, HeapElement obj) {
   queue_[hole].node->set_heap_index(hole);
 }
 
-void Heap::PercolateUp(int hole, HeapElement obj) {
+void Heap::PercolateUp(std::size_t hole, HeapElement obj) {
   // Sanity checks.
   CHECK(!Empty());
 
@@ -86,7 +86,7 @@ void Heap::PercolateUp(int hole, HeapElement obj) {
   queue_[hole].node->set_heap_index(hole);
 }
 
-void Heap::PercolateUpOrDown(int hole, HeapElement obj) {
+void Heap::PercolateUpOrDown(std::size_t hole, HeapElement obj) {
   // Sanity checks.
   CHECK(!Empty());
 

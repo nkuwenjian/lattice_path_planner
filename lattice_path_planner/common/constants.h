@@ -41,7 +41,7 @@ namespace common {
 static constexpr int kInfiniteCost = std::numeric_limits<int>::max();
 static constexpr int kPhiGridResolution = 16;
 static constexpr int kNumOfGridSearchActions = 16;
-static constexpr int kInitHeapCapacity = 5000;
+static constexpr std::size_t kInitHeapCapacity = 5000;
 
 }  // namespace common
 }  // namespace lattice_path_planner

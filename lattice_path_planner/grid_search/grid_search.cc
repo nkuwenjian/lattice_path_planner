@@ -74,7 +74,8 @@ void GridSearch::Clear() {
 
   // clear closed list
   closed_list_.clear();
-  closed_list_.resize(max_grid_x_ * max_grid_y_, common::NodeStatus::OPEN);
+  closed_list_.resize(max_grid_x_ * max_grid_y_,
+                      common::Node::NodeStatus::OPEN);
 
   start_node_ = nullptr;
   end_node_ = nullptr;
@@ -118,7 +119,7 @@ bool GridSearch::GenerateGridPath(
     CHECK_NOTNULL(node);
     CHECK_NE(node->g(), common::kInfiniteCost);
     closed_list_[CalcGridXYIndex(node->grid_x(), node->grid_y())] =
-        common::NodeStatus::CLOSED;
+        common::Node::NodeStatus::CLOSED;
 
     // new expand
     ++explored_node_num;
@@ -374,7 +375,7 @@ void GridSearch::UpdateSuccs(const Node2d* curr_node) {
       continue;
     }
     if (closed_list_[CalcGridXYIndex(succ_x, succ_y)] ==
-        common::NodeStatus::CLOSED) {
+        common::Node::NodeStatus::CLOSED) {
       continue;
     }
     // get action cost

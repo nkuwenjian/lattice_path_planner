@@ -45,14 +45,6 @@
 namespace lattice_path_planner {
 namespace grid_search {
 
-enum class TerminationCondition : int {
-  TERM_CONDITION_OPTPATHFOUND,
-  TERM_CONDITION_20PERCENTOVEROPTPATH,
-  TERM_CONDITION_TWOTIMESOPTPATH,
-  TERM_CONDITION_THREETIMESOPTPATH,
-  TERM_CONDITION_ALLCELLS
-};
-
 struct GridAStarResult {
   std::vector<int> x;
   std::vector<int> y;
@@ -75,8 +67,17 @@ struct GridSearchPrimitives {
 
 class GridSearch {
  public:
+  enum class TerminationCondition {
+    TERM_CONDITION_OPTPATHFOUND,
+    TERM_CONDITION_20PERCENTOVEROPTPATH,
+    TERM_CONDITION_TWOTIMESOPTPATH,
+    TERM_CONDITION_THREETIMESOPTPATH,
+    TERM_CONDITION_ALLCELLS
+  };
+
   GridSearch() = default;
   virtual ~GridSearch();
+
   void Init(int max_grid_x, int max_grid_y, double xy_grid_resolution,
             uint8_t obsthresh, TerminationCondition termination_condition);
   bool GenerateGridPath(int sx, int sy, int ex, int ey,
@@ -112,7 +113,7 @@ class GridSearch {
 
   std::vector<std::vector<Node2d>> dp_lookup_table_;
   std::unique_ptr<common::Heap> open_list_ = nullptr;
-  std::vector<common::NodeStatus> closed_list_;
+  std::vector<common::Node::NodeStatus> closed_list_;
   std::size_t iterations_ = 0U;
 
   GridSearchPrimitives actions_;

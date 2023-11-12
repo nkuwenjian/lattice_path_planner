@@ -41,6 +41,8 @@
 #include "tf/tf.h"
 #include "tf/transform_broadcaster.h"
 
+namespace lattice_path_planner {
+
 class TfBroadcaster {
  public:
   TfBroadcaster() = default;
@@ -137,12 +139,14 @@ void TfBroadcaster::SetStart(
   start_received_ = true;
 }
 
+}  // namespace lattice_path_planner
+
 int main(int argc, char* argv[]) {
   ros::init(argc, argv, "tf_broadcaster");
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = true;
 
-  TfBroadcaster tf_broadcaster;
+  lattice_path_planner::TfBroadcaster tf_broadcaster;
   tf_broadcaster.Initialize();
   ros::spin();
 
