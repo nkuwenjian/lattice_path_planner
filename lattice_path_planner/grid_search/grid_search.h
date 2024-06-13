@@ -39,6 +39,7 @@
 
 #include "glog/logging.h"
 
+#include "lattice_path_planner/common/constants.h"
 #include "lattice_path_planner/common/heap.h"
 #include "lattice_path_planner/grid_search/node2d.h"
 
@@ -68,11 +69,11 @@ struct GridSearchPrimitives {
 class GridSearch {
  public:
   enum class TerminationCondition {
-    TERM_CONDITION_OPTPATHFOUND,
-    TERM_CONDITION_20PERCENTOVEROPTPATH,
-    TERM_CONDITION_TWOTIMESOPTPATH,
-    TERM_CONDITION_THREETIMESOPTPATH,
-    TERM_CONDITION_ALLCELLS
+    kOptPath,
+    kTwentyPercentOverOptPath,
+    kTwoTimesOptPath,
+    kThreeTimesOptPath,
+    kAllCells
   };
 
   GridSearch() = default;

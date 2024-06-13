@@ -76,8 +76,7 @@ void LatticeAStar::Init(int max_grid_x, int max_grid_y,
   grid_a_star_heuristic_generator_->Init(
       env_cfg_.max_grid_x, env_cfg_.max_grid_y, env_cfg_.xy_grid_resolution,
       env_cfg_.cost_inscribed_thresh,
-      grid_search::GridSearch::TerminationCondition::
-          TERM_CONDITION_TWOTIMESOPTPATH);
+      grid_search::GridSearch::TerminationCondition::kTwoTimesOptPath);
   open_list_ = std::make_unique<common::Heap>();
 
   lattice_lookup_table_.resize(env_cfg_.phi_grid_resolution);
@@ -130,7 +129,7 @@ void LatticeAStar::Clear() {
   closed_list_.resize(env_cfg_.phi_grid_resolution);
   for (int i = 0; i < env_cfg_.phi_grid_resolution; ++i) {
     closed_list_[i].resize(env_cfg_.max_grid_x * env_cfg_.max_grid_y,
-                           common::Node::NodeStatus::OPEN);
+                           common::Node::NodeStatus::kOpen);
   }
 
   start_node_ = nullptr;
@@ -185,7 +184,7 @@ bool LatticeAStar::Plan(double start_x, double start_y, double start_phi,
     CHECK_NOTNULL(node);
     CHECK_NE(node->g(), common::kInfiniteCost);
     closed_list_[node->grid_phi()][CalcGridXYIndex(
-        node->grid_x(), node->grid_y())] = common::Node::NodeStatus::CLOSED;
+        node->grid_x(), node->grid_y())] = common::Node::NodeStatus::kClosed;
     // new expand
     ++explored_node_num;
     UpdateSuccs(node);
@@ -318,7 +317,7 @@ void LatticeAStar::UpdateSuccs(const Node3d* curr_node) {
       continue;
     }
     if (closed_list_[succ_phi][CalcGridXYIndex(succ_x, succ_y)] ==
-        common::Node::NodeStatus::CLOSED) {
+        common::Node::NodeStatus::kClosed) {
       continue;
     }
     // get action cost

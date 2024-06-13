@@ -33,6 +33,7 @@
 
 #include <vector>
 
+#include "lattice_path_planner/common/constants.h"
 #include "lattice_path_planner/common/node.h"
 #include "lattice_path_planner/common/utils.h"
 

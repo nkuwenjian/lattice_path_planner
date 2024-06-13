@@ -152,7 +152,7 @@ void BreadthFirstSearch::ComputeDistances(
 
 void BreadthFirstSearch::ClearDistances() {
   std::queue<XYCell> empty_queue;
-  swap(queue_, empty_queue);
+  std::swap(queue_, empty_queue);
 
   for (int x = 0; x < size_x_; x++) {
     for (int y = 0; y < size_y_; y++) {

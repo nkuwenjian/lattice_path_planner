@@ -224,7 +224,7 @@ void PrimitiveGenerator::PrecomputeActionswithCompleteMotionPrimitive() {
              common::ContXY2Disc(y, env_cfg_.xy_grid_resolution)});
       }
 
-      for (const auto& cell : interm2DcellSet) {
+      for (const common::XYCell& cell : interm2DcellSet) {
         motion_primitives_[tind][mind].interm2DcellsV.push_back(cell);
       }
 

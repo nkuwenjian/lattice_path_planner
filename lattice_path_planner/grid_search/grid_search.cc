@@ -75,7 +75,7 @@ void GridSearch::Clear() {
   // clear closed list
   closed_list_.clear();
   closed_list_.resize(max_grid_x_ * max_grid_y_,
-                      common::Node::NodeStatus::OPEN);
+                      common::Node::NodeStatus::kOpen);
 
   start_node_ = nullptr;
   end_node_ = nullptr;
@@ -119,7 +119,7 @@ bool GridSearch::GenerateGridPath(
     CHECK_NOTNULL(node);
     CHECK_NE(node->g(), common::kInfiniteCost);
     closed_list_[CalcGridXYIndex(node->grid_x(), node->grid_y())] =
-        common::Node::NodeStatus::CLOSED;
+        common::Node::NodeStatus::kClosed;
 
     // new expand
     ++explored_node_num;
@@ -138,8 +138,7 @@ bool GridSearch::GenerateGridPath(
     LOG(ERROR) << "Grid searching return infinite cost (open_list ran out)";
     return false;
   }
-  if (termination_condition_ ==
-      TerminationCondition::TERM_CONDITION_OPTPATHFOUND) {
+  if (termination_condition_ == TerminationCondition::kOptPath) {
     LoadGridAStarResult(result);
   }
   return true;
@@ -167,8 +166,7 @@ int GridSearch::CalcGridXYIndex(const int grid_x, const int grid_y) const {
 
 int GridSearch::GetKey(const Node2d* node) const {
   CHECK_NOTNULL(node);
-  return termination_condition_ ==
-                 TerminationCondition::TERM_CONDITION_OPTPATHFOUND
+  return termination_condition_ == TerminationCondition::kOptPath
              ? node->g() + node->h()
              : node->g();
 }
@@ -375,7 +373,7 @@ void GridSearch::UpdateSuccs(const Node2d* curr_node) {
       continue;
     }
     if (closed_list_[CalcGridXYIndex(succ_x, succ_y)] ==
-        common::Node::NodeStatus::CLOSED) {
+        common::Node::NodeStatus::kClosed) {
       continue;
     }
     // get action cost
@@ -445,19 +443,19 @@ float GridSearch::GetTerminationFactor(
     TerminationCondition termination_condition) {
   float term_factor = 0.0F;
   switch (termination_condition) {
-    case TerminationCondition::TERM_CONDITION_OPTPATHFOUND:
+    case TerminationCondition::kOptPath:
       term_factor = 1.0F;
       break;
-    case TerminationCondition::TERM_CONDITION_20PERCENTOVEROPTPATH:
+    case TerminationCondition::kTwentyPercentOverOptPath:
       term_factor = 1.0F / 1.2F;
       break;
-    case TerminationCondition::TERM_CONDITION_TWOTIMESOPTPATH:
+    case TerminationCondition::kTwoTimesOptPath:
       term_factor = 0.5F;
       break;
-    case TerminationCondition::TERM_CONDITION_THREETIMESOPTPATH:
+    case TerminationCondition::kThreeTimesOptPath:
       term_factor = 1.0F / 3.0F;
       break;
-    case TerminationCondition::TERM_CONDITION_ALLCELLS:
+    case TerminationCondition::kAllCells:
       term_factor = 0.0F;
       break;
     default:
